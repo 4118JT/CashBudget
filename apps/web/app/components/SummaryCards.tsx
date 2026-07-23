@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { Tx } from './types';
 
 interface SummaryCardsProps {
@@ -24,8 +24,6 @@ function MomBadge({ current, previous }: { current: number; previous: number }) 
 }
 
 export default function SummaryCards({ transactions }: SummaryCardsProps) {
-  const [view, setView] = useState<'month' | 'lifetime'>('month');
-
   const stats = useMemo(() => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -99,32 +97,12 @@ export default function SummaryCards({ transactions }: SummaryCardsProps) {
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
 
   return (
-    <div>
-      {/* Toggle */}
-      <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
-        <button
-          onClick={() => setView('month')}
-          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-            view === 'month'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          This Month
-        </button>
-        <button
-          onClick={() => setView('lifetime')}
-          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-            view === 'lifetime'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          All Time
-        </button>
-      </div>
-
-      {view === 'month' ? (
+    <div className="space-y-6">
+      <section>
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">This Month</h2>
+          <p className="text-sm text-gray-500">Current month totals and trends compared with last month.</p>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Income */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
@@ -184,7 +162,13 @@ export default function SummaryCards({ transactions }: SummaryCardsProps) {
             )}
           </div>
         </div>
-      ) : (
+      </section>
+
+      <section>
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">All Time</h2>
+          <p className="text-sm text-gray-500">Lifetime totals so you can compare them directly with this month.</p>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Lifetime Income */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
@@ -238,7 +222,7 @@ export default function SummaryCards({ transactions }: SummaryCardsProps) {
             )}
           </div>
         </div>
-      )}
+      </section>
     </div>
   );
 }
