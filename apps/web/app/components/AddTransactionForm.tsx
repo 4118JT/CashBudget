@@ -46,11 +46,12 @@ export default function AddTransactionForm({ categories, onAdd, addToast }: AddT
     try {
       await onAdd({
         amount: Number(amount),
+        type: type.toLowerCase(),
         merchant: merchant.trim(),
-        kind,
-        category_id: categoryId || null,
-        occurred_at: new Date(occurredAt).toISOString(),
-        note: note.trim(),
+        category: categoryId || null,
+        date: new Date(occurredAt).toISOString().slice(0, 10), // YYYY-MM-DD
+        notes: note.trim() || null,
+        status: 'completed',
       });
       setAmount('');
       setMerchant('');
