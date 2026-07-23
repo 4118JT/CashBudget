@@ -4,17 +4,33 @@ import { useState } from 'react';
 import type { Category } from './types';
 import type { ToastType } from './Toast';
 
-interface AddTransactionFormProps {
-  categories: Category[];
-  onAdd: (tx: {
-    amount: number;
-    transaction_type: 'expense' | 'income';
-    merchant: string;
-    category_id: string | null;
-    occurred_at: string;
-    note: string | null;
-  }) => Promise<void>;
-  addToast: (msg: string, type?: ToastType) => void;
+async function handleSubmit(e: React.FormEvent) {
+  e.preventDefault();
+  if (!validate()) return;
+  setSaving(true);
+
+  try {
+    await onAdd({
+      amount: Number(amount),
+      transaction_type: kind, // 'expense' | 'income'
+      merchant: merchant.trim(),
+      category_id: categoryId || null,
+      occurred_at: new Date(occurredAt).toISOString(),
+      note: note.trim() || null,
+    });
+
+    setAmount('');
+    setMerchant('');
+    setCategoryId('');
+    setNote('');
+    setOccurredAt(new Date().toISOString().slice(0, 10));
+    setErrors({});
+    addToast('Transaction saved!', 'success');
+  } catch (err: unknown) {
+    addToast(err instanceof Error ? err.message : 'Failed to save transaction', 'error');
+  } finally {
+    setSaving(false);
+  }
 }
 
 export default function AddTransactionForm({ categories, onAdd, addToast }: AddTransactionFormProps) {
