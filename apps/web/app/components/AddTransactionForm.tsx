@@ -4,6 +4,14 @@ import { useState } from 'react';
 import type { Category } from './types';
 import type { ToastType } from './Toast';
 
+const validate = (): boolean => {
+  const next: Record<string, string> = {};
+  if (!amount || Number(amount) <= 0) next.amount = 'Enter a valid amount';
+  if (!merchant.trim()) next.merchant = 'Merchant is required';
+  setErrors(next);
+  return Object.keys(next).length === 0;
+};
+
 async function handleSubmit(e: React.FormEvent) {
   e.preventDefault();
   if (!validate()) return;
@@ -12,7 +20,7 @@ async function handleSubmit(e: React.FormEvent) {
   try {
     await onAdd({
       amount: Number(amount),
-      transaction_type: kind, // 'expense' | 'income'
+      transaction_type: kind,
       merchant: merchant.trim(),
       category_id: categoryId || null,
       occurred_at: new Date(occurredAt).toISOString(),
