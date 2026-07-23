@@ -14,6 +14,22 @@ create table if not exists loans (
   updated_at timestamptz default now()
 );
 
+-- Loans table
+create table if not exists loans (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text not null,
+  lender text,
+  original_amount numeric(12,2) not null check (original_amount >= 0),
+  remaining_balance numeric(12,2) not null check (remaining_balance >= 0),
+  interest_rate numeric(5,2) not null default 0 check (interest_rate >= 0),
+  monthly_payment numeric(12,2) not null default 0 check (monthly_payment >= 0),
+  next_due_date date,
+  status text not null default 'active' check (status in ('active','paid_off')),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
 alter table loans enable row level security;
 
 drop policy if exists "select own loans" on loans;
