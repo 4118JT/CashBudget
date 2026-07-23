@@ -8,7 +8,7 @@ interface AddTransactionFormProps {
   categories: Category[];
   onAdd: (tx: {
     amount: number;
-    transaction_type: 'expense' | 'income';
+    kind: 'expense' | 'income';
     merchant: string;
     category_id: string | null;
     occurred_at: string;
@@ -45,7 +45,7 @@ export default function AddTransactionForm({ categories, onAdd, addToast }: AddT
     try {
       await onAdd({
         amount: Number(amount),
-        transaction_type: kind,
+        kind, // ✅ must match onAdd prop type
         merchant: merchant.trim(),
         category_id: categoryId || null,
         occurred_at: new Date(occurredAt).toISOString(),
