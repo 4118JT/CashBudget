@@ -29,56 +29,37 @@ export default function HomePage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // ─── helpers ───────────────────────────────────────────────
+  const loadData = useCallback(
+    async (uid: string) => {
+      const [txRes, catRes] = await Promise.all([
+        supabase
+          .from('transactions')
+          .select('id, amount, kind, merchant, occurred_at, status, category_id, note, categories(name, kind)')
+          .eq('user_id', uid)
+          .order('occurred_at', { ascending: false })
+          .limit(200),
+        supabase.from('categories').select('id, name, kind').eq('user_id', uid).order('name'),
+      ]);
 
-  const loadData = useCallback(async (uid: string) => {
-    const [txRes, catRes] = await Promise.all([
-      supabase
-        .from('transactions')
-        .select('id, amount, kind, merchant, occurred_at, status, category_id, note, categories(name, kind)')
-        .eq('user_id', uid)
-        .order('occurred_at', { ascending: false })
-        .limit(200),
-      supabase
-        .from('categories')
-        .select('id, name, kind')
-        .eq('user_id', uid)
-        .order('name'),
-    ]);
+      if (txRes.error) addToast(txRes.error.message, 'error');
+      else setTransactions((txRes.data as unknown as Tx[]) ?? []);
 
-    if (txRes.error) addToast(txRes.error.message, 'error');
-    else setTransactions((txRes.data as unknown as Tx[]) ?? []);
+      if (catRes.error) addToast(catRes.error.message, 'error');
+      else setCategories((catRes.data as unknown as Category[]) ?? []);
+    },
+    [addToast]
+  );
 
-    if (catRes.error) addToast(catRes.error.message, 'error');
-    else setCategories((catRes.data as unknown as Category[]) ?? []);
-  }, [addToast]);
-
-  /** Ensure profile, default account, and default categories exist for the user. */
   const ensureUserSetup = useCallback(async (uid: string) => {
-    // Profile
-    await supabase
-      .from('profiles')
-      .upsert({ user_id: uid }, { onConflict: 'user_id', ignoreDuplicates: true });
+    await supabase.from('profiles').upsert({ user_id: uid }, { onConflict: 'user_id', ignoreDuplicates: true });
 
-    // Account
-    const { data: accounts } = await supabase
-      .from('accounts')
-      .select('id')
-      .eq('user_id', uid)
-      .limit(1);
+    const { data: accounts } = await supabase.from('accounts').select('id').eq('user_id', uid).limit(1);
 
     if (!accounts || accounts.length === 0) {
-      await supabase
-        .from('accounts')
-        .insert({ user_id: uid, name: 'Main Account', type: 'wallet', starting_balance: 0 });
+      await supabase.from('accounts').insert({ user_id: uid, name: 'Main Account', type: 'wallet', starting_balance: 0 });
     }
 
-    // Default categories
-    const { data: existingCats } = await supabase
-      .from('categories')
-      .select('id')
-      .eq('user_id', uid)
-      .limit(1);
+    const { data: existingCats } = await supabase.from('categories').select('id').eq('user_id', uid).limit(1);
 
     if (!existingCats || existingCats.length === 0) {
       const seedRows = [
@@ -88,8 +69,6 @@ export default function HomePage() {
       await supabase.from('categories').insert(seedRows);
     }
   }, []);
-
-  // ─── auth ──────────────────────────────────────────────────
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -126,19 +105,16 @@ export default function HomePage() {
     setCategories([]);
   }
 
-  // ─── transactions ──────────────────────────────────────────
-
   async function addTransaction(data: {
     amount: number;
     merchant: string;
     kind: 'expense' | 'income';
     category_id: string | null;
     occurred_at: string;
-    note: string;
+    note: string | null;
   }) {
     if (!user) return;
 
-    // ensureUserSetup guarantees an account exists; fetch it (or create if missing).
     const { data: accounts, error: accError } = await supabase
       .from('accounts')
       .select('id')
@@ -149,7 +125,6 @@ export default function HomePage() {
 
     let accountId = accounts?.[0]?.id;
     if (!accountId) {
-      // Fallback: create account and retrieve its id atomically
       const { data: newAcc, error: createErr } = await supabase
         .from('accounts')
         .upsert(
@@ -158,6 +133,7 @@ export default function HomePage() {
         )
         .select('id')
         .single();
+
       if (createErr) throw new Error('Could not find or create an account. Please refresh and try again.');
       accountId = newAcc?.id;
     }
@@ -169,10 +145,10 @@ export default function HomePage() {
       account_id: accountId,
       amount: data.amount,
       kind: data.kind,
-      merchant: data.merchant || null,
-      category_id: data.category_id,
+      merchant: data.merchant?.trim() || null,
+      category_id: data.category_id || null,
       occurred_at: data.occurred_at,
-      note: data.note || null,
+      note: data.note?.trim() || null,
       status: 'confirmed',
       source: 'manual',
     });
@@ -191,8 +167,6 @@ export default function HomePage() {
     setTransactions((prev) => prev.filter((t) => t.id !== id));
     addToast('Transaction deleted.', 'info');
   }
-
-  // ─── render ────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -221,18 +195,10 @@ export default function HomePage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
-            <AddTransactionForm
-              categories={categories}
-              onAdd={addTransaction}
-              addToast={addToast}
-            />
+            <AddTransactionForm categories={categories} onAdd={addTransaction} addToast={addToast} />
           </div>
           <div className="lg:col-span-2">
-            <TransactionList
-              transactions={transactions}
-              categories={categories}
-              onDelete={deleteTransaction}
-            />
+            <TransactionList transactions={transactions} categories={categories} onDelete={deleteTransaction} />
           </div>
         </div>
 
