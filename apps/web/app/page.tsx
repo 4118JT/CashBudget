@@ -201,10 +201,6 @@ export default function HomePage() {
       addToast('Unable to add goal. Account initialization failed — please refresh.', 'error');
       return;
     }
-    if (goalsDisabledReason) {
-      throw new Error(goalsDisabledReason);
-    }
-
     const { error } = await supabase.from('planned_expenses').insert({
       user_id: user.id,
       account_id: accountId,
