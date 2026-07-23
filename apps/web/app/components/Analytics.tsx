@@ -37,6 +37,8 @@ const fmt = (n: number) =>
 const fmtFull = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
 
+const tooltipFormatter = (v: unknown) => fmtFull(Number(v));
+
 function SectionToggle({
   title,
   open,
@@ -210,7 +212,7 @@ export default function Analytics({ transactions, categories }: AnalyticsProps) 
                   <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
                   <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                   <YAxis tickFormatter={(v) => fmt(v)} tick={{ fontSize: 11 }} width={70} />
-                  <Tooltip formatter={(v) => fmtFull(Number(v))} />
+                  <Tooltip formatter={tooltipFormatter} />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
                   <Bar dataKey="income" name="Income" fill="#4ade80" radius={[3, 3, 0, 0]} />
                   <Bar dataKey="expense" name="Expense" fill="#f87171" radius={[3, 3, 0, 0]} />
@@ -230,7 +232,7 @@ export default function Analytics({ transactions, categories }: AnalyticsProps) 
                   <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
                   <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                   <YAxis tickFormatter={(v) => fmt(v)} tick={{ fontSize: 11 }} width={70} />
-                  <Tooltip formatter={(v) => fmtFull(Number(v))} />
+                  <Tooltip formatter={tooltipFormatter} />
                   <Line
                     type="monotone"
                     dataKey="net"
@@ -298,16 +300,17 @@ export default function Analytics({ transactions, categories }: AnalyticsProps) 
                       outerRadius={90}
                       innerRadius={44}
                       paddingAngle={2}
-                      label={({ percent }) =>
-                        (percent ?? 0) > 0.05 ? `${((percent ?? 0) * 100).toFixed(0)}%` : ''
-                      }
+                      label={({ percent }) => {
+                        const p = percent ?? 0;
+                        return p > 0.05 ? `${(p * 100).toFixed(0)}%` : '';
+                      }}
                       labelLine={false}
                     >
                       {pieData.map((_, i) => (
                         <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(v) => fmtFull(Number(v))} />
+                    <Tooltip formatter={tooltipFormatter} />
                     <Legend
                       formatter={(value) => <span style={{ fontSize: 11 }}>{value}</span>}
                     />
