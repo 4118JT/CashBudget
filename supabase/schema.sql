@@ -132,7 +132,10 @@ create table if not exists plaid_accounts (
   is_active boolean not null default true,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
-  unique (user_id, plaid_account_id)
+  unique (user_id, plaid_account_id),
+  foreign key (user_id, plaid_item_id)
+    references plaid_items(user_id, plaid_item_id)
+    on delete cascade
 );
 
 create index if not exists ix_plaid_accounts_user on plaid_accounts(user_id);

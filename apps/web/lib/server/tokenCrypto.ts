@@ -17,7 +17,9 @@ function parseKeys(): { current: KeyRecord; all: Map<string, Buffer> } {
   const map = new Map<string, Buffer>();
   for (const segment of raw.split(',').map((s) => s.trim()).filter(Boolean)) {
     const [version, keyB64] = segment.split(':');
-    if (!version || !keyB64) continue;
+    if (!version || !keyB64) {
+      throw new Error('Each PLAID_TOKEN_ENCRYPTION_KEYS entry must be in version:base64Key format');
+    }
     const key = Buffer.from(keyB64, 'base64');
     if (key.length !== 32) {
       throw new Error(
