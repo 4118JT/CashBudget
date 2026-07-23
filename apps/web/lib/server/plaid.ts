@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { Configuration, PlaidApi, PlaidEnvironments, type JWKPublicKey, type TransactionsSyncRequest } from 'plaid';
+import { Configuration, PlaidApi, PlaidEnvironments, type TransactionsSyncRequest } from 'plaid';
 
 const clientId = process.env.PLAID_CLIENT_ID;
 const secret = process.env.PLAID_SECRET;
@@ -54,7 +54,7 @@ export async function verifyPlaidWebhook(rawBody: string, signedJwt: string) {
 
   const { data } = await plaidClient.webhookVerificationKeyGet({ key_id: header.kid });
   const key = crypto.createPublicKey({
-    key: data.key as JWKPublicKey,
+    key: { ...data.key } as JsonWebKey,
     format: 'jwk',
   });
 
