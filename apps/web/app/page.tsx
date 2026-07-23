@@ -7,6 +7,7 @@ import Analytics from './components/Analytics';
 import AuthForm from './components/AuthForm';
 import GoalsPanel from './components/GoalsPanel';
 import LoansPanel from './components/LoansPanel';
+import PlaidConnect from './components/PlaidConnect';
 import NavBar from './components/NavBar';
 import RecurringPanel from './components/RecurringPanel';
 import SummaryCards from './components/SummaryCards';
@@ -45,6 +46,7 @@ export default function HomePage() {
   const [goalsDisabledReason, setGoalsDisabledReason] = useState<string | null>(null);
   const [accountId, setAccountId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeView, setActiveView] = useState<'overview' | 'transactions' | 'planning' | 'insights'>('overview');
 
   const loadData = useCallback(
     async (uid: string) => {
@@ -141,6 +143,16 @@ export default function HomePage() {
       await supabase.from('categories').insert(seedRows);
     }
   }, [addToast]);
+
+  useEffect(() => {
+    const view = window.location.hash.slice(1);
+    if (view === 'overview' || view === 'transactions' || view === 'planning' || view === 'insights') setActiveView(view);
+  }, []);
+
+  function navigate(view: 'overview' | 'transactions' | 'planning' | 'insights') {
+    setActiveView(view);
+    window.history.replaceState(null, '', `#${view}`);
+  }
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -335,8 +347,8 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-gray-400 text-sm">Loading…</p>
+      <div className="app-shell flex min-h-screen items-center justify-center">
+        <p className="text-sm font-medium text-slate-400">Loading…</p>
       </div>
     );
   }
@@ -351,55 +363,19 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <NavBar userEmail={user.email} onSignOut={signOut} />
+    <div className="app-shell">
+      <NavBar userEmail={user.email} activeView={activeView} onNavigate={navigate} onSignOut={signOut} />
       <ToastContainer toasts={toasts} />
 
-      <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-        <SummaryCards transactions={transactions} />
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1">
-            <AddTransactionForm categories={categories} onAdd={addTransaction} addToast={addToast} />
-            <div className="mt-6">
-              <GoalsPanel
-                goals={goals}
-                onAddGoal={addGoal}
-                addToast={addToast}
-                disabledReason={goalsDisabledReason}
-              />
-            </div>
-            <div className="mt-6">
-              <LoansPanel
-                loans={loans}
-                onAddLoan={addLoan}
-                onMarkPaidOff={markLoanPaidOff}
-                onDeleteLoan={deleteLoan}
-                addToast={addToast}
-              />
-            </div>
-            <div className="mt-6">
-              <RecurringPanel
-                recurring={recurring}
-                categories={categories}
-                onAdd={addRecurring}
-                onToggleActive={toggleRecurring}
-                onDelete={deleteRecurring}
-                addToast={addToast}
-              />
-            </div>
-          </div>
-          <div className="lg:col-span-2">
-            <TransactionList
-              transactions={transactions}
-              categories={categories}
-              onDelete={deleteTransaction}
-              onDeleteMany={deleteTransactions}
-            />
-          </div>
-        </div>
-
-        <Analytics transactions={transactions} categories={categories} />
+      <main className="mx-auto max-w-6xl space-y-7 px-4 py-7 sm:py-9">
+        {activeView === 'overview' && <>
+          <div><p className="text-sm font-semibold uppercase tracking-[0.18em] text-indigo-600">Financial snapshot</p><h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-950">Your money at a glance</h1><p className="mt-2 text-slate-500">Track today, then dive into the details when you need them.</p></div>
+          <SummaryCards transactions={transactions} />
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3"><AddTransactionForm categories={categories} onAdd={addTransaction} addToast={addToast} /><div className="lg:col-span-2"><TransactionList transactions={transactions.slice(0, 10)} categories={categories} onDelete={deleteTransaction} onDeleteMany={deleteTransactions} /></div></div>
+        </>}
+        {activeView === 'transactions' && <><div><p className="text-sm font-semibold uppercase tracking-[0.18em] text-indigo-600">Activity</p><h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-950">Transactions</h1><p className="mt-2 text-slate-500">Add, filter, and review every movement of money.</p></div><div className="grid grid-cols-1 gap-6 lg:grid-cols-3"><AddTransactionForm categories={categories} onAdd={addTransaction} addToast={addToast} /><div className="lg:col-span-2"><TransactionList transactions={transactions} categories={categories} onDelete={deleteTransaction} onDeleteMany={deleteTransactions} /></div></div></>}
+        {activeView === 'planning' && <><div><p className="text-sm font-semibold uppercase tracking-[0.18em] text-indigo-600">Look ahead</p><h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-950">Planning</h1><p className="mt-2 text-slate-500">Keep upcoming goals, debt, and recurring costs in one place.</p></div><PlaidConnect addToast={addToast} onSynced={() => loadData(user.id)} /><div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3"><GoalsPanel goals={goals} onAddGoal={addGoal} addToast={addToast} disabledReason={goalsDisabledReason} /><LoansPanel loans={loans} onAddLoan={addLoan} onMarkPaidOff={markLoanPaidOff} onDeleteLoan={deleteLoan} addToast={addToast} /><RecurringPanel recurring={recurring} categories={categories} onAdd={addRecurring} onToggleActive={toggleRecurring} onDelete={deleteRecurring} addToast={addToast} /></div></>}
+        {activeView === 'insights' && <><div><p className="text-sm font-semibold uppercase tracking-[0.18em] text-indigo-600">Patterns</p><h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-950">Insights</h1><p className="mt-2 text-slate-500">Explore how your income and spending change over time.</p></div><Analytics transactions={transactions} categories={categories} /></>}
       </main>
     </div>
   );

@@ -100,12 +100,12 @@ export default function SummaryCards({ transactions }: SummaryCardsProps) {
   return (
     <div className="space-y-4">
       {/* Header bar with toggle */}
-      <div className="flex items-center justify-between">
+      <div className="surface-card flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">
+          <h2 className="text-xl font-bold tracking-tight text-slate-950">
             {view === 'monthly' ? 'This Month' : 'All Time'}
           </h2>
-          <p className="text-sm text-gray-400 mt-0.5">
+          <p className="mt-1 text-sm text-slate-500">
             {view === 'monthly'
               ? 'Current month totals vs last month'
               : 'Lifetime totals across all transactions'}
@@ -113,13 +113,13 @@ export default function SummaryCards({ transactions }: SummaryCardsProps) {
         </div>
 
         {/* Toggle switch */}
-        <div className="flex items-center gap-1 bg-gray-100 rounded-full p-1">
+        <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1">
           <button
             onClick={() => setView('monthly')}
             className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${
               view === 'monthly'
-                ? 'bg-indigo-600 text-white shadow'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             Monthly
@@ -128,8 +128,8 @@ export default function SummaryCards({ transactions }: SummaryCardsProps) {
             onClick={() => setView('alltime')}
             className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${
               view === 'alltime'
-                ? 'bg-violet-600 text-white shadow'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-violet-600 text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             All Time
@@ -140,7 +140,7 @@ export default function SummaryCards({ transactions }: SummaryCardsProps) {
       {/* Monthly view */}
       {view === 'monthly' && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-green-500 col-span-1">
+          <div className="surface-card p-4 border-t-4 border-t-green-500 col-span-1">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Income</p>
             <p className="mt-1 text-xl font-bold text-green-600 truncate">{fmt(stats.income)}</p>
             <div className="mt-2">
@@ -148,7 +148,7 @@ export default function SummaryCards({ transactions }: SummaryCardsProps) {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-red-500 col-span-1">
+          <div className="surface-card p-4 border-t-4 border-t-red-500 col-span-1">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Expenses</p>
             <p className="mt-1 text-xl font-bold text-red-600 truncate">{fmt(stats.expense)}</p>
             <div className="mt-2">
@@ -156,7 +156,7 @@ export default function SummaryCards({ transactions }: SummaryCardsProps) {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-indigo-500 col-span-1">
+          <div className="surface-card p-4 border-t-4 border-t-indigo-500 col-span-1">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Net</p>
             <p className={`mt-1 text-xl font-bold truncate ${stats.net >= 0 ? 'text-indigo-600' : 'text-orange-600'}`}>
               {fmt(stats.net)}
@@ -166,7 +166,7 @@ export default function SummaryCards({ transactions }: SummaryCardsProps) {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-teal-500 col-span-1">
+          <div className="surface-card p-4 border-t-4 border-t-teal-500 col-span-1">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Savings Rate</p>
             <p className={`mt-1 text-xl font-bold ${(stats.savingsRate ?? 0) >= 0 ? 'text-teal-600' : 'text-orange-600'}`}>
               {stats.savingsRate === null ? '—' : `${stats.savingsRate.toFixed(1)}%`}
@@ -174,13 +174,13 @@ export default function SummaryCards({ transactions }: SummaryCardsProps) {
             <p className="mt-1.5 text-xs text-gray-400">of income</p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-amber-500 col-span-1">
+          <div className="surface-card p-4 border-t-4 border-t-amber-500 col-span-1">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Daily avg</p>
             <p className="mt-1 text-xl font-bold text-gray-800 truncate">{fmt(stats.avgDailyExpense)}</p>
             <p className="mt-1.5 text-xs text-gray-400">per day</p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-pink-500 col-span-1">
+          <div className="surface-card p-4 border-t-4 border-t-pink-500 col-span-1">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Top category</p>
             {stats.topCategory ? (
               <>
@@ -197,19 +197,19 @@ export default function SummaryCards({ transactions }: SummaryCardsProps) {
       {/* All Time view */}
       {view === 'alltime' && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-green-400 col-span-1">
+          <div className="surface-card p-4 border-t-4 border-t-green-400 col-span-1">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Income</p>
             <p className="mt-1 text-xl font-bold text-green-600 truncate">{fmt(stats.lifetimeIncome)}</p>
             <p className="mt-1.5 text-xs text-gray-400">all time</p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-red-400 col-span-1">
+          <div className="surface-card p-4 border-t-4 border-t-red-400 col-span-1">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Expenses</p>
             <p className="mt-1 text-xl font-bold text-red-600 truncate">{fmt(stats.lifetimeExpense)}</p>
             <p className="mt-1.5 text-xs text-gray-400">all time</p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-indigo-400 col-span-1">
+          <div className="surface-card p-4 border-t-4 border-t-indigo-400 col-span-1">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Net</p>
             <p className={`mt-1 text-xl font-bold truncate ${stats.lifetimeNet >= 0 ? 'text-indigo-600' : 'text-orange-600'}`}>
               {fmt(stats.lifetimeNet)}
@@ -217,7 +217,7 @@ export default function SummaryCards({ transactions }: SummaryCardsProps) {
             <p className="mt-1.5 text-xs text-gray-400">all time</p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-teal-400 col-span-1">
+          <div className="surface-card p-4 border-t-4 border-t-teal-400 col-span-1">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Savings Rate</p>
             <p className={`mt-1 text-xl font-bold ${(stats.lifetimeSavingsRate ?? 0) >= 0 ? 'text-teal-600' : 'text-orange-600'}`}>
               {stats.lifetimeSavingsRate === null ? '—' : `${stats.lifetimeSavingsRate.toFixed(1)}%`}
@@ -225,13 +225,13 @@ export default function SummaryCards({ transactions }: SummaryCardsProps) {
             <p className="mt-1.5 text-xs text-gray-400">of income</p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-amber-400 col-span-1">
+          <div className="surface-card p-4 border-t-4 border-t-amber-400 col-span-1">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Avg/month</p>
             <p className="mt-1 text-xl font-bold text-gray-800 truncate">{fmt(stats.avgMonthlyExpense)}</p>
             <p className="mt-1.5 text-xs text-gray-400">{stats.distinctMonths} month{stats.distinctMonths !== 1 ? 's' : ''}</p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-pink-400 col-span-1">
+          <div className="surface-card p-4 border-t-4 border-t-pink-400 col-span-1">
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Top category</p>
             {stats.lifetimeTopCategory ? (
               <>
