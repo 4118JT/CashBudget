@@ -106,15 +106,14 @@ export default function HomePage() {
     setTransactions([]);
     setCategories([]);
   }
-
-  async function addTransaction(data: {
-    amount: number;
-    merchant: string;
-    kind: 'expense' | 'income';
-    category_id: string | null;
-    occurred_at: string;
-    note: string | null;
-  }) {
+async function addTransaction(data: {
+  amount: number;
+  merchant: string;
+  kind: 'expense' | 'income';
+  category_id: string | null;
+  occurred_at: string;
+  note: string | null;
+}) {
   if (!user) return;
 
   const { error } = await supabase.from('transactions').insert({
@@ -127,6 +126,13 @@ export default function HomePage() {
     note: data.note?.trim() || null,
   });
 
+  if (error) {
+    console.error('Insert transaction error:', error);
+    throw new Error(error.message || JSON.stringify(error));
+  }
+
+  await loadData(user.id);
+}
   if (error) {
     console.error('Insert transaction error:', error);
     throw new Error(error.message || JSON.stringify(error));
