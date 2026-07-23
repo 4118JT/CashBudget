@@ -1,4 +1,4 @@
-import type { AccountBase, TransactionsSyncTransaction, TransactionsSyncTransactionRemoved } from 'plaid';
+import { CountryCode, type AccountBase, type RemovedTransaction, type Transaction } from 'plaid';
 import { plaidClient, syncTransactions } from './plaid';
 import { decryptToken, encryptToken } from './tokenCrypto';
 import { supabaseAdmin } from './supabase';
@@ -109,7 +109,7 @@ async function ensureMappedAccounts(input: {
   if (upsertError) throw new Error(upsertError.message);
 }
 
-function normalizeTransaction(userId: string, mapping: Map<string, string>, tx: TransactionsSyncTransaction) {
+function normalizeTransaction(userId: string, mapping: Map<string, string>, tx: Transaction) {
   const appAccountId = mapping.get(tx.account_id);
   if (!appAccountId) return null;
   const kind = tx.amount < 0 ? 'income' : 'expense';
@@ -128,7 +128,7 @@ function normalizeTransaction(userId: string, mapping: Map<string, string>, tx: 
   };
 }
 
-async function removeDeletedTransactions(userId: string, removed: TransactionsSyncTransactionRemoved[]) {
+async function removeDeletedTransactions(userId: string, removed: RemovedTransaction[]) {
   if (removed.length === 0) return;
   const refs = removed.map((t) => t.transaction_id);
   const { error } = await supabaseAdmin
@@ -248,7 +248,7 @@ export async function exchangeAndPersistItem(input: {
     try {
       const institution = await plaidClient.institutionsGetById({
         institution_id: institutionId,
-        country_codes: ['US'],
+        country_codes: [CountryCode.Us],
       });
       institutionName = institution.data.institution.name ?? null;
     } catch {

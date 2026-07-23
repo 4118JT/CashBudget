@@ -45,7 +45,7 @@ export default function PlaidPanel({ onSynced, addToast }: PlaidPanelProps) {
         setLinkToken(null);
       }
     },
-    onExit: (_, error) => {
+    onExit: (error) => {
       if (error) addToast(error.display_message ?? error.error_message ?? 'Plaid flow canceled.', 'error');
       setLinkToken(null);
     },

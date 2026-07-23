@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { CountryCode, Products } from 'plaid';
 import { plaidClient } from '../../../../lib/server/plaid';
 import { requireUser } from '../../../../lib/server/supabase';
 
@@ -10,8 +11,8 @@ export async function POST(request: NextRequest) {
     const response = await plaidClient.linkTokenCreate({
       user: { client_user_id: user.id },
       client_name: 'CashBudget',
-      products: ['transactions'],
-      country_codes: ['US'],
+      products: [Products.Transactions],
+      country_codes: [CountryCode.Us],
       language: 'en',
       webhook: webhookUrl || undefined,
       redirect_uri: redirectUri || undefined,
