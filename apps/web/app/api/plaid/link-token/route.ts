@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CountryCode, Products, type LinkTokenCreateRequest } from 'plaid';
-import { plaidClient } from '../../../../lib/server/plaid';
+import { getPlaidClient } from '../../../../lib/server/plaid';
 import { requireUser } from '../../../../lib/server/supabase';
 
 const LINK_PRODUCTS: Products[] = [Products.Transactions];
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       webhook: webhookUrl || undefined,
       redirect_uri: redirectUri || undefined,
     };
-    const response = await plaidClient.linkTokenCreate(linkTokenRequest);
+    const response = await getPlaidClient().linkTokenCreate(linkTokenRequest);
 
     return NextResponse.json({
       link_token: response.data.link_token,
