@@ -51,15 +51,17 @@ export default function HomePage() {
   );
 
   const ensureUserSetup = useCallback(async (uid: string) => {
-    await supabase.from('profiles').upsert({ user_id: uid }, { onConflict: 'user_id', ignoreDuplicates: true });
+    // Profile
+    await supabase
+      .from('profiles')
+      .upsert({ user_id: uid }, { onConflict: 'user_id', ignoreDuplicates: true });
 
-    const { data: accounts } = await supabase.from('accounts').select('id').eq('user_id', uid).limit(1);
-
-    if (!accounts || accounts.length === 0) {
-      await supabase.from('accounts').insert({ user_id: uid, name: 'Main Account', type: 'wallet', starting_balance: 0 });
-    }
-
-    const { data: existingCats } = await supabase.from('categories').select('id').eq('user_id', uid).limit(1);
+    // Default categories
+    const { data: existingCats } = await supabase
+      .from('categories')
+      .select('id')
+      .eq('user_id', uid)
+      .limit(1);
 
     if (!existingCats || existingCats.length === 0) {
       const seedRows = [
@@ -115,40 +117,8 @@ export default function HomePage() {
   }) {
     if (!user) return;
 
-    const { data: accounts, error: accError } = await supabase
-      .from('accounts')
-      .select('id')
-      .eq('user_id', user.id)
-      .limit(1);
-
-    if (accError) {
-      console.error('Account fetch error:', accError);
-      throw new Error(accError.message);
-    }
-
-    let accountId = accounts?.[0]?.id;
-    if (!accountId) {
-      const { data: newAcc, error: createErr } = await supabase
-        .from('accounts')
-        .upsert(
-          { user_id: user.id, name: 'Main Account', type: 'wallet', starting_balance: 0 },
-          { onConflict: 'user_id', ignoreDuplicates: false }
-        )
-        .select('id')
-        .single();
-
-      if (createErr) {
-        console.error('Account create error:', createErr);
-        throw new Error(createErr.message || 'Could not find or create an account. Please refresh and try again.');
-      }
-      accountId = newAcc?.id;
-    }
-
-    if (!accountId) throw new Error('Could not find or create an account. Please refresh and try again.');
-
     const payload = {
       user_id: user.id,
-      account_id: accountId,
       amount: data.amount,
       kind: data.kind,
       merchant: data.merchant?.trim() || null,
@@ -171,11 +141,17 @@ export default function HomePage() {
 
   async function deleteTransaction(id: string) {
     if (!user) return;
-    const { error } = await supabase.from('transactions').delete().eq('id', id).eq('user_id', user.id);
+    const { error } = await supabase
+      .from('transactions')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id);
+
     if (error) {
       addToast(error.message, 'error');
       return;
     }
+
     setTransactions((prev) => prev.filter((t) => t.id !== id));
     addToast('Transaction deleted.', 'info');
   }
@@ -207,10 +183,19 @@ export default function HomePage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
-            <AddTransactionForm categories={categories} onAdd={addTransaction} addToast={addToast} />
+            <AddTransactionForm
+              categories={categories}
+              onAdd={addTransaction}
+              addToast={addToast}
+            />
           </div>
+
           <div className="lg:col-span-2">
-            <TransactionList transactions={transactions} categories={categories} onDelete={deleteTransaction} />
+            <TransactionList
+              transactions={transactions}
+              categories={categories}
+              onDelete={deleteTransaction}
+            />
           </div>
         </div>
 
