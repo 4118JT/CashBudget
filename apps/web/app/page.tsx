@@ -198,7 +198,6 @@ export default function HomePage() {
     });
 
     if (error) {
-      console.error('Insert goal error:', error);
       throw new Error(error.message || JSON.stringify(error));
     }
 
