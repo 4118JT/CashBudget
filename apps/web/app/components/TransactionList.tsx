@@ -82,10 +82,13 @@ export default function TransactionList({ transactions, categories, onDelete, on
   const inputCls = 'rounded-lg border border-gray-200 px-2 py-1.5 text-xs text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400';
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
       {/* Filter bar */}
-      <div className="px-5 py-3 border-b border-gray-100 flex flex-wrap gap-2 items-center">
+      <div className="px-5 py-3.5 border-b border-gray-100 flex flex-wrap gap-2 items-center bg-gradient-to-r from-white to-gray-50">
         <span className="text-sm font-semibold text-gray-900 mr-1">Transactions</span>
+        <span className="inline-flex items-center rounded-full bg-indigo-50 text-indigo-700 text-[11px] font-semibold px-2 py-0.5">
+          {filtered.length} shown
+        </span>
 
         <select className={selectCls} value={filterKind} onChange={(e) => setFilterKind(e.target.value as typeof filterKind)}>
           <option value="all">All types</option>
@@ -139,9 +142,9 @@ export default function TransactionList({ transactions, categories, onDelete, on
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-auto max-h-[620px]">
           <table className="w-full text-sm">
-            <thead>
+            <thead className="sticky top-0 z-10 bg-white">
               <tr className="text-xs text-gray-500 uppercase tracking-wide border-b border-gray-100">
                 <th className="text-left px-5 py-2.5 font-medium">Date</th>
                 <th className="text-left px-3 py-2.5 font-medium">Description</th>
@@ -152,7 +155,7 @@ export default function TransactionList({ transactions, categories, onDelete, on
             </thead>
             <tbody>
               {filtered.map((t) => (
-                <tr key={t.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                <tr key={t.id} className="border-b border-gray-50 hover:bg-indigo-50/40 transition-colors">
                   <td className="px-5 py-3 text-gray-500 whitespace-nowrap">
                     {new Date(t.occurred_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </td>
@@ -172,7 +175,7 @@ export default function TransactionList({ transactions, categories, onDelete, on
                     )}
                   </td>
                   <td className="px-5 py-3 text-right whitespace-nowrap">
-                    <span className={`font-semibold ${t.kind === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                    <span className={`font-semibold ${t.kind === 'income' ? 'text-green-600' : 'text-red-500'}`}>
                       {t.kind === 'income' ? '+' : '-'}{fmt(Number(t.amount))}
                     </span>
                   </td>
@@ -192,7 +195,7 @@ export default function TransactionList({ transactions, categories, onDelete, on
               ))}
             </tbody>
           </table>
-          <p className="text-xs text-gray-400 px-5 py-2">
+          <p className="text-xs text-gray-400 px-5 py-2.5 border-t border-gray-100 bg-white">
             Showing {filtered.length} of {transactions.length} transaction{transactions.length !== 1 ? 's' : ''}
           </p>
         </div>
