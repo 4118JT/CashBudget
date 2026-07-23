@@ -54,7 +54,7 @@ export async function verifyPlaidWebhook(rawBody: string, signedJwt: string) {
 
   const { data } = await plaidClient.webhookVerificationKeyGet({ key_id: header.kid });
   const key = crypto.createPublicKey({
-    key: { ...data.key } as JsonWebKey,
+    key: { ...data.key } as unknown as crypto.JsonWebKey,
     format: 'jwk',
   });
 
