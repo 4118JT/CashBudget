@@ -20,7 +20,9 @@ A polished personal finance tracker built with **Next.js 14**, **Supabase**, and
 
 - **Supabase** (Postgres + Row Level Security + Auth)
 - Base schema: `supabase/schema.sql`
-- Migration: `supabase/migrations/001_auto_profile_and_account.sql`
+- Migrations:
+  - `supabase/migrations/001_auto_profile_and_account.sql`
+  - `supabase/migrations/002_add_planned_expenses.sql`
 
 ---
 
@@ -59,6 +61,7 @@ In the **Supabase SQL Editor**, run these in order:
 
 1. `supabase/schema.sql` — creates all tables and RLS policies
 2. `supabase/migrations/001_auto_profile_and_account.sql` — adds the trigger that auto-creates a profile and default account for every new sign-up, and back-fills existing users
+3. `supabase/migrations/002_add_planned_expenses.sql` — adds the `planned_expenses` table and RLS policy for savings goals on existing projects
 
 ### 5. Run locally
 
@@ -111,4 +114,5 @@ supabase/
   schema.sql             # Full database schema
   migrations/
     001_auto_profile_and_account.sql
+    002_add_planned_expenses.sql
 ```

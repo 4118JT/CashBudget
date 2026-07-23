@@ -8,6 +8,7 @@ interface GoalsPanelProps {
   goals: Goal[];
   onAddGoal: (goal: { title: string; amount: number; due_date: string }) => Promise<void>;
   addToast: (msg: string, type?: ToastType) => void;
+  disabledReason?: string | null;
 }
 
 function getDefaultDueDate() {
@@ -16,17 +17,22 @@ function getDefaultDueDate() {
   return date.toISOString().slice(0, 10);
 }
 
-export default function GoalsPanel({ goals, onAddGoal, addToast }: GoalsPanelProps) {
+export default function GoalsPanel({ goals, onAddGoal, addToast, disabledReason = null }: GoalsPanelProps) {
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [dueDate, setDueDate] = useState(getDefaultDueDate());
   const [saving, setSaving] = useState(false);
+  const disabled = Boolean(disabledReason);
 
   const fmt = (n: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (disabledReason) {
+      addToast(disabledReason, 'info');
+      return;
+    }
     if (!title.trim()) {
       addToast('Goal title is required', 'error');
       return;
@@ -70,6 +76,7 @@ export default function GoalsPanel({ goals, onAddGoal, addToast }: GoalsPanelPro
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Goal title (e.g. New Console)"
+          disabled={disabled}
         />
         <label htmlFor="goal-amount" className="block text-sm text-gray-600 mb-1">
           Amount
@@ -83,6 +90,7 @@ export default function GoalsPanel({ goals, onAddGoal, addToast }: GoalsPanelPro
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           placeholder="Amount"
+          disabled={disabled}
         />
         <label htmlFor="goal-due-date" className="block text-sm text-gray-600 mb-1">
           Target date
@@ -93,15 +101,18 @@ export default function GoalsPanel({ goals, onAddGoal, addToast }: GoalsPanelPro
           className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none"
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
+          disabled={disabled}
         />
         <button
           type="submit"
-          disabled={saving}
+          disabled={saving || disabled}
           className="w-full rounded-lg bg-teal-600 text-white py-2.5 text-sm font-medium hover:bg-teal-700 disabled:opacity-60"
         >
-          {saving ? 'Saving...' : 'Add Goal'}
+          {saving ? 'Saving...' : disabled ? 'Goals unavailable' : 'Add Goal'}
         </button>
       </form>
+
+      {disabledReason ? <p className="mt-3 text-xs text-amber-600">{disabledReason}</p> : null}
 
       <div className="mt-4 space-y-2">
         {goals.length === 0 ? (
