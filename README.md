@@ -24,6 +24,7 @@ A polished personal finance tracker built with **Next.js 14**, **Supabase**, and
   - `supabase/migrations/001_auto_profile_and_account.sql`
   - `supabase/migrations/002_add_planned_expenses.sql`
   - `supabase/migrations/003_harden_rls_and_backfill_tables.sql`
+  - `supabase/migrations/004_add_loans_and_recurring.sql`
 
 ---
 
@@ -64,6 +65,7 @@ In the **Supabase SQL Editor**, run these in order:
 2. `supabase/migrations/001_auto_profile_and_account.sql` — adds the trigger that auto-creates a profile and default account for every new sign-up, and back-fills existing users
 3. `supabase/migrations/002_add_planned_expenses.sql` — adds the `planned_expenses` table and RLS policy for savings goals on existing projects
 4. `supabase/migrations/003_harden_rls_and_backfill_tables.sql` — back-fills missing core tables and rebuilds per-operation RLS policies for authenticated users
+5. `supabase/migrations/004_add_loans_and_recurring.sql` — adds the `loans` and `recurring_payments` tables with RLS policies
 
 ### 5. Run locally
 
@@ -118,4 +120,5 @@ supabase/
     001_auto_profile_and_account.sql
     002_add_planned_expenses.sql
     003_harden_rls_and_backfill_tables.sql
+    004_add_loans_and_recurring.sql
 ```
