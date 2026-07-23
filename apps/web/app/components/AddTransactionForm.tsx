@@ -8,9 +8,9 @@ type NewTx = {
   amount: number;
   kind: 'expense' | 'income';
   merchant: string;
-  category_id: string;
+  category_id: string | null;
   occurred_at: string;
-  note: string;
+  note: string | null;
 };
 
 interface AddTransactionFormProps {
@@ -28,9 +28,7 @@ export default function AddTransactionForm({
   const [merchant, setMerchant] = useState('');
   const [kind, setKind] = useState<'expense' | 'income'>('expense');
   const [categoryId, setCategoryId] = useState('');
-  const [occurredAt, setOccurredAt] = useState(
-    new Date().toISOString().slice(0, 10)
-  );
+  const [occurredAt, setOccurredAt] = useState(new Date().toISOString().slice(0, 10));
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -48,16 +46,16 @@ export default function AddTransactionForm({
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!validate()) return;
-
     setSaving(true);
+
     try {
       await onAdd({
         amount: Number(amount),
         kind,
         merchant: merchant.trim(),
-        category_id: categoryId || '',
+        category_id: categoryId || null,
         occurred_at: new Date(occurredAt).toISOString(),
-        note: note.trim(),
+        note: note.trim() || null,
       });
 
       setAmount('');
@@ -68,10 +66,9 @@ export default function AddTransactionForm({
       setErrors({});
       addToast('Transaction saved!', 'success');
     } catch (err: unknown) {
-      addToast(
-        err instanceof Error ? err.message : 'Failed to save transaction',
-        'error'
-      );
+      const msg = err instanceof Error ? err.message : 'Failed to save transaction';
+      console.error('Save transaction failed:', err);
+      addToast(msg, 'error');
     } finally {
       setSaving(false);
     }
@@ -84,9 +81,7 @@ export default function AddTransactionForm({
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-      <h2 className="text-base font-semibold text-gray-900 mb-4">
-        Add Transaction
-      </h2>
+      <h2 className="text-base font-semibold text-gray-900 mb-4">Add Transaction</h2>
 
       <form onSubmit={handleSubmit} className="space-y-3">
         <div>
@@ -100,9 +95,7 @@ export default function AddTransactionForm({
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0.00"
           />
-          {errors.amount && (
-            <p className="text-xs text-red-500 mt-1">{errors.amount}</p>
-          )}
+          {errors.amount && <p className="text-xs text-red-500 mt-1">{errors.amount}</p>}
         </div>
 
         <div>
@@ -134,9 +127,7 @@ export default function AddTransactionForm({
         </div>
 
         <div>
-          <label className="block text-sm text-gray-600 mb-1">
-            Merchant / Description
-          </label>
+          <label className="block text-sm text-gray-600 mb-1">Merchant / Description</label>
           <input
             type="text"
             className={inputCls('merchant')}
@@ -144,9 +135,7 @@ export default function AddTransactionForm({
             onChange={(e) => setMerchant(e.target.value)}
             placeholder="e.g. Starbucks"
           />
-          {errors.merchant && (
-            <p className="text-xs text-red-500 mt-1">{errors.merchant}</p>
-          )}
+          {errors.merchant && <p className="text-xs text-red-500 mt-1">{errors.merchant}</p>}
         </div>
 
         <div>
@@ -176,9 +165,7 @@ export default function AddTransactionForm({
         </div>
 
         <div>
-          <label className="block text-sm text-gray-600 mb-1">
-            Notes (optional)
-          </label>
+          <label className="block text-sm text-gray-600 mb-1">Notes (optional)</label>
           <textarea
             className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none"
             value={note}

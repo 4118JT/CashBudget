@@ -121,7 +121,10 @@ export default function HomePage() {
       .eq('user_id', user.id)
       .limit(1);
 
-    if (accError) throw accError;
+    if (accError) {
+      console.error('Account fetch error:', accError);
+      throw new Error(accError.message);
+    }
 
     let accountId = accounts?.[0]?.id;
     if (!accountId) {
@@ -134,13 +137,16 @@ export default function HomePage() {
         .select('id')
         .single();
 
-      if (createErr) throw new Error('Could not find or create an account. Please refresh and try again.');
+      if (createErr) {
+        console.error('Account create error:', createErr);
+        throw new Error(createErr.message || 'Could not find or create an account. Please refresh and try again.');
+      }
       accountId = newAcc?.id;
     }
 
     if (!accountId) throw new Error('Could not find or create an account. Please refresh and try again.');
 
-    const { error } = await supabase.from('transactions').insert({
+    const payload = {
       user_id: user.id,
       account_id: accountId,
       amount: data.amount,
@@ -151,9 +157,15 @@ export default function HomePage() {
       note: data.note?.trim() || null,
       status: 'confirmed',
       source: 'manual',
-    });
+    };
 
-    if (error) throw error;
+    const { error } = await supabase.from('transactions').insert(payload);
+
+    if (error) {
+      console.error('Insert transaction error:', error, payload);
+      throw new Error(error.message || JSON.stringify(error));
+    }
+
     await loadData(user.id);
   }
 
