@@ -74,7 +74,7 @@ export default function PlaidPanel({ onSynced, addToast }: PlaidPanelProps) {
     setSyncing(true);
     try {
       const headers = await getAuthHeaders();
-      const res = await fetch('/api/plaid/sync', { method: 'POST', headers, body: '{}' });
+      const res = await fetch('/api/plaid/sync', { method: 'POST', headers });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed to sync transactions');
       const synced = json.synced ?? { added: 0, modified: 0, removed: 0 };

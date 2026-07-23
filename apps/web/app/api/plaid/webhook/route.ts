@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { syncByPlaidItemId } from '../../../../lib/server/plaidSync';
 import { supabaseAdmin } from '../../../../lib/server/supabase';
 
@@ -18,7 +19,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'PLAID_WEBHOOK_SECRET is not configured' }, { status: 500 });
     }
     const providedSecret = request.headers.get('x-plaid-webhook-secret');
-    if (providedSecret !== expectedSecret) {
+    if (!providedSecret) {
+      return NextResponse.json({ error: 'Unauthorized webhook' }, { status: 401 });
+    }
+    const provided = Buffer.from(providedSecret);
+    const expected = Buffer.from(expectedSecret);
+    if (provided.length !== expected.length || !crypto.timingSafeEqual(provided, expected)) {
       return NextResponse.json({ error: 'Unauthorized webhook' }, { status: 401 });
     }
 

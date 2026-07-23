@@ -7,8 +7,10 @@ type KeyRecord = {
 
 const ALGO = 'aes-256-gcm';
 const IV_BYTES = 12;
+let cachedKeys: { current: KeyRecord; all: Map<string, Buffer> } | null = null;
 
 function parseKeys(): { current: KeyRecord; all: Map<string, Buffer> } {
+  if (cachedKeys) return cachedKeys;
   const raw = process.env.PLAID_TOKEN_ENCRYPTION_KEYS;
   if (!raw) throw new Error('Missing PLAID_TOKEN_ENCRYPTION_KEYS');
 
@@ -29,7 +31,8 @@ function parseKeys(): { current: KeyRecord; all: Map<string, Buffer> } {
   if (!currentVersion) throw new Error('Missing PLAID_TOKEN_ENCRYPTION_CURRENT_VERSION');
   const current = map.get(currentVersion);
   if (!current) throw new Error('Current encryption version is not present in PLAID_TOKEN_ENCRYPTION_KEYS');
-  return { current: { version: currentVersion, key: current }, all: map };
+  cachedKeys = { current: { version: currentVersion, key: current }, all: map };
+  return cachedKeys;
 }
 
 export function encryptToken(plaintext: string) {

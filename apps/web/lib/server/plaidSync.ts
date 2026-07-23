@@ -72,22 +72,20 @@ async function ensureMappedAccounts(input: {
   const missing = input.accounts.filter((a) => !existingMap.has(a.account_id));
 
   if (missing.length > 0) {
-    const { data: insertedAccounts, error: accountInsertError } = await supabaseAdmin
-      .from('accounts')
-      .insert(
-        missing.map((a) => ({
+    for (const account of missing) {
+      const { data: insertedAccount, error: accountInsertError } = await supabaseAdmin
+        .from('accounts')
+        .insert({
           user_id: input.userId,
-          name: [a.name, a.mask ? `**${a.mask}` : null].filter(Boolean).join(' '),
+          name: [account.name, account.mask ? `**${account.mask}` : null].filter(Boolean).join(' '),
           type: 'bank',
           starting_balance: 0,
-        }))
-      )
-      .select('id');
-    if (accountInsertError) throw new Error(accountInsertError.message);
-
-    insertedAccounts?.forEach((row, index) => {
-      existingMap.set(missing[index].account_id, row.id as string);
-    });
+        })
+        .select('id')
+        .single();
+      if (accountInsertError || !insertedAccount?.id) throw new Error(accountInsertError?.message || 'Failed to create linked account');
+      existingMap.set(account.account_id, insertedAccount.id as string);
+    }
   }
 
   const { error: upsertError } = await supabaseAdmin.from('plaid_accounts').upsert(
