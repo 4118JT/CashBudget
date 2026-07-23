@@ -85,151 +85,175 @@ alter table transactions enable row level security;
 alter table planned_expenses enable row level security;
 alter table imports enable row level security;
 
-create policy if not exists "select own profiles"
+drop policy if exists "select own profiles" on profiles;
+create policy "select own profiles"
 on profiles
 for select
 to authenticated
 using (auth.uid() = user_id);
 
-create policy if not exists "insert own profiles"
+drop policy if exists "insert own profiles" on profiles;
+create policy "insert own profiles"
 on profiles
 for insert
 to authenticated
 with check (auth.uid() = user_id);
 
-create policy if not exists "update own profiles"
+drop policy if exists "update own profiles" on profiles;
+create policy "update own profiles"
 on profiles
 for update
 to authenticated
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
-create policy if not exists "delete own profiles"
+drop policy if exists "delete own profiles" on profiles;
+create policy "delete own profiles"
 on profiles
 for delete
 to authenticated
 using (auth.uid() = user_id);
 
-create policy if not exists "select own accounts"
+drop policy if exists "select own accounts" on accounts;
+create policy "select own accounts"
 on accounts
 for select
 to authenticated
 using (auth.uid() = user_id);
 
-create policy if not exists "insert own accounts"
+drop policy if exists "insert own accounts" on accounts;
+create policy "insert own accounts"
 on accounts
 for insert
 to authenticated
 with check (auth.uid() = user_id);
 
-create policy if not exists "update own accounts"
+drop policy if exists "update own accounts" on accounts;
+create policy "update own accounts"
 on accounts
 for update
 to authenticated
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
-create policy if not exists "delete own accounts"
+drop policy if exists "delete own accounts" on accounts;
+create policy "delete own accounts"
 on accounts
 for delete
 to authenticated
 using (auth.uid() = user_id);
 
-create policy if not exists "select own categories"
+drop policy if exists "select own categories" on categories;
+create policy "select own categories"
 on categories
 for select
 to authenticated
 using (auth.uid() = user_id);
 
-create policy if not exists "insert own categories"
+drop policy if exists "insert own categories" on categories;
+create policy "insert own categories"
 on categories
 for insert
 to authenticated
 with check (auth.uid() = user_id);
 
-create policy if not exists "update own categories"
+drop policy if exists "update own categories" on categories;
+create policy "update own categories"
 on categories
 for update
 to authenticated
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
-create policy if not exists "delete own categories"
+drop policy if exists "delete own categories" on categories;
+create policy "delete own categories"
 on categories
 for delete
 to authenticated
 using (auth.uid() = user_id);
 
-create policy if not exists "select own transactions"
+drop policy if exists "select own transactions" on transactions;
+create policy "select own transactions"
 on transactions
 for select
 to authenticated
 using (auth.uid() = user_id);
 
-create policy if not exists "insert own transactions"
+drop policy if exists "insert own transactions" on transactions;
+create policy "insert own transactions"
 on transactions
 for insert
 to authenticated
 with check (auth.uid() = user_id);
 
-create policy if not exists "update own transactions"
+drop policy if exists "update own transactions" on transactions;
+create policy "update own transactions"
 on transactions
 for update
 to authenticated
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
-create policy if not exists "delete own transactions"
+drop policy if exists "delete own transactions" on transactions;
+create policy "delete own transactions"
 on transactions
 for delete
 to authenticated
 using (auth.uid() = user_id);
 
-create policy if not exists "select own planned_expenses"
+drop policy if exists "select own planned_expenses" on planned_expenses;
+create policy "select own planned_expenses"
 on planned_expenses
 for select
 to authenticated
 using (auth.uid() = user_id);
 
-create policy if not exists "insert own planned_expenses"
+drop policy if exists "insert own planned_expenses" on planned_expenses;
+create policy "insert own planned_expenses"
 on planned_expenses
 for insert
 to authenticated
 with check (auth.uid() = user_id);
 
-create policy if not exists "update own planned_expenses"
+drop policy if exists "update own planned_expenses" on planned_expenses;
+create policy "update own planned_expenses"
 on planned_expenses
 for update
 to authenticated
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
-create policy if not exists "delete own planned_expenses"
+drop policy if exists "delete own planned_expenses" on planned_expenses;
+create policy "delete own planned_expenses"
 on planned_expenses
 for delete
 to authenticated
 using (auth.uid() = user_id);
 
-create policy if not exists "select own imports"
+drop policy if exists "select own imports" on imports;
+create policy "select own imports"
 on imports
 for select
 to authenticated
 using (auth.uid() = user_id);
 
-create policy if not exists "insert own imports"
+drop policy if exists "insert own imports" on imports;
+create policy "insert own imports"
 on imports
 for insert
 to authenticated
 with check (auth.uid() = user_id);
 
-create policy if not exists "update own imports"
+drop policy if exists "update own imports" on imports;
+create policy "update own imports"
 on imports
 for update
 to authenticated
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
-create policy if not exists "delete own imports"
+drop policy if exists "delete own imports" on imports;
+create policy "delete own imports"
 on imports
 for delete
 to authenticated
