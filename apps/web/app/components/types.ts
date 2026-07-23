@@ -25,3 +25,25 @@ export type Goal = {
   recurrence: 'none' | 'monthly' | 'yearly';
   status: 'planned' | 'paid' | 'skipped';
 };
+
+export type Loan = {
+  id: string;
+  name: string;
+  lender: string | null;
+  original_amount: number;
+  remaining_balance: number;
+  interest_rate: number;
+  monthly_payment: number;
+  next_due_date: string | null;
+  status: 'active' | 'paid_off';
+};
+
+export type RecurringPayment = {
+  id: string;
+  name: string;
+  amount: number;
+  frequency: 'weekly' | 'biweekly' | 'monthly' | 'yearly';
+  next_due_date: string;
+  category_id: string | null;
+  is_active: boolean;
+};

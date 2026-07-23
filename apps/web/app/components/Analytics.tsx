@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
@@ -70,6 +72,8 @@ export default function Analytics({ transactions, categories }: AnalyticsProps) 
   const [showCategory, setShowCategory] = useState(true);
   const [showPie, setShowPie] = useState(true);
   const [showMerchants, setShowMerchants] = useState(true);
+  const [showRunningBalance, setShowRunningBalance] = useState(true);
+  const [showDayOfWeek, setShowDayOfWeek] = useState(true);
 
   const numMonths = Number(period) as number;
 
@@ -147,6 +151,44 @@ export default function Analytics({ transactions, categories }: AnalyticsProps) 
   const pieData = useMemo(() => categoryBreakdown.slice(0, 8), [categoryBreakdown]);
   const maxCategory = Math.max(...categoryBreakdown.map((c) => c.total), 1);
   const maxMerchant = Math.max(...topMerchants.map((m) => m.total), 1);
+
+  // Running balance over time (within selected period)
+  const runningBalance = useMemo(() => {
+    const cutoff = new Date();
+    cutoff.setMonth(cutoff.getMonth() - numMonths);
+    cutoff.setHours(0, 0, 0, 0);
+
+    const inPeriod = filtered
+      .filter((t) => new Date(t.occurred_at) >= cutoff)
+      .slice()
+      .sort((a, b) => new Date(a.occurred_at).getTime() - new Date(b.occurred_at).getTime());
+
+    let running = 0;
+    const points: { date: string; balance: number }[] = [];
+    for (const t of inPeriod) {
+      running += t.kind === 'income' ? Number(t.amount) : -Number(t.amount);
+      const label = new Date(t.occurred_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      points.push({ date: label, balance: running });
+    }
+    return points;
+  }, [filtered, numMonths]);
+
+  // Spending by day of week (expenses only, within selected period)
+  const dayOfWeekSpend = useMemo(() => {
+    const cutoff = new Date();
+    cutoff.setMonth(cutoff.getMonth() - numMonths);
+    const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const totals = [0, 0, 0, 0, 0, 0, 0];
+
+    for (const t of filtered) {
+      if (t.kind !== 'expense') continue;
+      if (new Date(t.occurred_at) < cutoff) continue;
+      totals[new Date(t.occurred_at).getDay()] += Number(t.amount);
+    }
+
+    // Start week on Monday
+    return [1, 2, 3, 4, 5, 6, 0].map((d) => ({ day: DAY_NAMES[d], total: totals[d] }));
+  }, [filtered, numMonths]);
 
   if (transactions.length === 0) return null;
 
@@ -350,6 +392,72 @@ export default function Analytics({ transactions, categories }: AnalyticsProps) 
             </div>
           )
         )}
+      </div>
+
+      {/* Grid row 3: Running Balance + Day of Week */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Running Balance */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <SectionToggle title="Running Balance" open={showRunningBalance} onToggle={() => setShowRunningBalance((v) => !v)} />
+          {showRunningBalance && (
+            runningBalance.length === 0 ? (
+              <p className="text-sm text-gray-400 mt-4">No transactions in this period.</p>
+            ) : (
+              <div className="mt-4 h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={runningBalance} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
+                    <YAxis tickFormatter={(v) => fmt(v)} tick={{ fontSize: 11 }} width={70} />
+                    <Tooltip formatter={tooltipFormatter} />
+                    <Area
+                      type="monotone"
+                      dataKey="balance"
+                      name="Balance"
+                      stroke="#6366f1"
+                      strokeWidth={2}
+                      fill="url(#balanceGradient)"
+                      dot={false}
+                      activeDot={{ r: 5 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )
+          )}
+        </div>
+
+        {/* Spending by Day of Week */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <SectionToggle title="Spending by Day of Week" open={showDayOfWeek} onToggle={() => setShowDayOfWeek((v) => !v)} />
+          {showDayOfWeek && (
+            dayOfWeekSpend.every((d) => d.total === 0) ? (
+              <p className="text-sm text-gray-400 mt-4">No expense data for this period.</p>
+            ) : (
+              <div className="mt-4 h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={dayOfWeekSpend} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                    <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+                    <YAxis tickFormatter={(v) => fmt(v)} tick={{ fontSize: 11 }} width={70} />
+                    <Tooltip formatter={tooltipFormatter} />
+                    <Bar dataKey="total" name="Spent" radius={[3, 3, 0, 0]}>
+                      {dayOfWeekSpend.map((_, i) => (
+                        <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )
+          )}
+        </div>
       </div>
     </div>
   );
