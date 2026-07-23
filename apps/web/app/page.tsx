@@ -1,164 +1,236 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import AddTransactionForm from './components/AddTransactionForm';
+import Analytics from './components/Analytics';
+import AuthForm from './components/AuthForm';
+import NavBar from './components/NavBar';
+import SummaryCards from './components/SummaryCards';
+import { ToastContainer, useToasts } from './components/Toast';
+import TransactionList from './components/TransactionList';
+import type { Category, Tx } from './components/types';
 
-type Tx = {
-  id: string;
-  amount: number;
-  kind: 'expense' | 'income';
-  merchant: string | null;
-  occurred_at: string;
-  status: 'draft' | 'confirmed';
-};
+const DEFAULT_EXPENSE_CATEGORIES = [
+  'Food & Dining',
+  'Shopping',
+  'Transportation',
+  'Entertainment',
+  'Bills & Utilities',
+  'Healthcare',
+  'Other',
+];
+const DEFAULT_INCOME_CATEGORIES = ['Salary', 'Freelance', 'Investment', 'Other Income'];
 
 export default function HomePage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [userId, setUserId] = useState<string | null>(null);
+  const { toasts, addToast } = useToasts();
+  const [user, setUser] = useState<{ id: string; email: string } | null>(null);
   const [transactions, setTransactions] = useState<Tx[]>([]);
-  const [amount, setAmount] = useState('');
-  const [merchant, setMerchant] = useState('');
-  const [kind, setKind] = useState<'expense' | 'income'>('expense');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const monthTotal = useMemo(() => {
-    return transactions.reduce((acc, t) => {
-      if (t.kind === 'expense') return acc - Number(t.amount);
-      return acc + Number(t.amount);
-    }, 0);
-  }, [transactions]);
+  // ─── helpers ───────────────────────────────────────────────
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        setUserId(data.user.id);
-        loadTransactions(data.user.id);
-      }
-    });
+  const loadData = useCallback(async (uid: string) => {
+    const [txRes, catRes] = await Promise.all([
+      supabase
+        .from('transactions')
+        .select('id, amount, kind, merchant, occurred_at, status, category_id, note, categories(name, kind)')
+        .eq('user_id', uid)
+        .order('occurred_at', { ascending: false })
+        .limit(200),
+      supabase
+        .from('categories')
+        .select('id, name, kind')
+        .eq('user_id', uid)
+        .order('name'),
+    ]);
+
+    if (txRes.error) addToast(txRes.error.message, 'error');
+    else setTransactions((txRes.data as unknown as Tx[]) ?? []);
+
+    if (catRes.error) addToast(catRes.error.message, 'error');
+    else setCategories((catRes.data as unknown as Category[]) ?? []);
+  }, [addToast]);
+
+  /** Ensure profile, default account, and default categories exist for the user. */
+  const ensureUserSetup = useCallback(async (uid: string) => {
+    // Profile
+    await supabase
+      .from('profiles')
+      .upsert({ user_id: uid }, { onConflict: 'user_id', ignoreDuplicates: true });
+
+    // Account
+    const { data: accounts } = await supabase
+      .from('accounts')
+      .select('id')
+      .eq('user_id', uid)
+      .limit(1);
+
+    if (!accounts || accounts.length === 0) {
+      await supabase
+        .from('accounts')
+        .insert({ user_id: uid, name: 'Main Account', type: 'wallet', starting_balance: 0 });
+    }
+
+    // Default categories
+    const { data: existingCats } = await supabase
+      .from('categories')
+      .select('id')
+      .eq('user_id', uid)
+      .limit(1);
+
+    if (!existingCats || existingCats.length === 0) {
+      const seedRows = [
+        ...DEFAULT_EXPENSE_CATEGORIES.map((name) => ({ user_id: uid, name, kind: 'expense' as const })),
+        ...DEFAULT_INCOME_CATEGORIES.map((name) => ({ user_id: uid, name, kind: 'income' as const })),
+      ];
+      await supabase.from('categories').insert(seedRows);
+    }
   }, []);
 
-  async function signUp() {
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) return alert(error.message);
-    alert('Check your email for confirmation link.');
+  // ─── auth ──────────────────────────────────────────────────
+
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (data.user) {
+        const u = { id: data.user.id, email: data.user.email ?? '' };
+        setUser(u);
+        await ensureUserSetup(u.id);
+        await loadData(u.id);
+      }
+      setLoading(false);
+    });
+  }, [ensureUserSetup, loadData]);
+
+  async function signIn(email: string, password: string) {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    const u = { id: data.user.id, email: data.user.email ?? '' };
+    setUser(u);
+    await ensureUserSetup(u.id);
+    await loadData(u.id);
+    addToast('Welcome back!', 'success');
   }
 
-  async function signIn() {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return alert(error.message);
-    setUserId(data.user.id);
-    await ensureDefaultAccount(data.user.id);
-    await loadTransactions(data.user.id);
+  async function signUp(email: string, password: string) {
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) throw error;
+    addToast('Check your email for a confirmation link.', 'info');
   }
 
   async function signOut() {
     await supabase.auth.signOut();
-    setUserId(null);
+    setUser(null);
     setTransactions([]);
+    setCategories([]);
   }
 
-  async function ensureDefaultAccount(uid: string) {
-    const { data: accounts } = await supabase.from('accounts').select('id').eq('user_id', uid).limit(1);
+  // ─── transactions ──────────────────────────────────────────
+
+  async function addTransaction(data: {
+    amount: number;
+    merchant: string;
+    kind: 'expense' | 'income';
+    category_id: string | null;
+    occurred_at: string;
+    note: string;
+  }) {
+    if (!user) return;
+
+    // Always ensure account exists before inserting
+    let { data: accounts } = await supabase
+      .from('accounts')
+      .select('id')
+      .eq('user_id', user.id)
+      .limit(1);
+
     if (!accounts || accounts.length === 0) {
-      await supabase.from('accounts').insert({ user_id: uid, name: 'Apple Cash', type: 'wallet', starting_balance: 0 });
+      const { data: newAcc } = await supabase
+        .from('accounts')
+        .insert({ user_id: user.id, name: 'Main Account', type: 'wallet', starting_balance: 0 })
+        .select('id')
+        .single();
+      accounts = newAcc ? [newAcc] : [];
     }
-  }
 
-  async function loadTransactions(uid: string) {
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('id, amount, kind, merchant, occurred_at, status')
-      .eq('user_id', uid)
-      .order('occurred_at', { ascending: false })
-      .limit(50);
-
-    if (error) return alert(error.message);
-    setTransactions((data as Tx[]) || []);
-  }
-
-  async function addTransaction() {
-    if (!userId) return;
-    const amt = Number(amount);
-    if (!amt || amt <= 0) return alert('Enter a valid amount');
-
-    const { data: accounts } = await supabase.from('accounts').select('id').eq('user_id', userId).limit(1);
     const accountId = accounts?.[0]?.id;
-    if (!accountId) return alert('No account found');
+    if (!accountId) throw new Error('Could not find or create an account. Please refresh and try again.');
 
     const { error } = await supabase.from('transactions').insert({
-      user_id: userId,
+      user_id: user.id,
       account_id: accountId,
-      amount: amt,
-      kind,
-      merchant: merchant || null,
+      amount: data.amount,
+      kind: data.kind,
+      merchant: data.merchant || null,
+      category_id: data.category_id,
+      occurred_at: data.occurred_at,
+      note: data.note || null,
       status: 'confirmed',
-      source: 'manual'
+      source: 'manual',
     });
 
-    if (error) return alert(error.message);
-    setAmount('');
-    setMerchant('');
-    await loadTransactions(userId);
+    if (error) throw error;
+    await loadData(user.id);
+  }
+
+  async function deleteTransaction(id: string) {
+    if (!user) return;
+    const { error } = await supabase.from('transactions').delete().eq('id', id).eq('user_id', user.id);
+    if (error) {
+      addToast(error.message, 'error');
+      return;
+    }
+    setTransactions((prev) => prev.filter((t) => t.id !== id));
+    addToast('Transaction deleted.', 'info');
+  }
+
+  // ─── render ────────────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-gray-400 text-sm">Loading…</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <>
+        <AuthForm onSignIn={signIn} onSignUp={signUp} />
+        <ToastContainer toasts={toasts} />
+      </>
+    );
   }
 
   return (
-    <main style={{ maxWidth: 800, margin: '0 auto', padding: 20 }}>
-      <h1>CashBudget</h1>
-      <p>Track Apple Cash spending + future spending.</p>
+    <div className="min-h-screen bg-gray-50">
+      <NavBar userEmail={user.email} onSignOut={signOut} />
+      <ToastContainer toasts={toasts} />
 
-      {!userId ? (
-        <section style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
-          <h2>Login / Signup</h2>
-          <input placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} style={{ display: 'block', marginBottom: 8, width: '100%' }} />
-          <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} style={{ display: 'block', marginBottom: 8, width: '100%' }} />
-          <button onClick={signIn} style={{ marginRight: 8 }}>Sign In</button>
-          <button onClick={signUp}>Sign Up</button>
-        </section>
-      ) : (
-        <>
-          <button onClick={signOut} style={{ marginBottom: 12 }}>Sign Out</button>
+      <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+        <SummaryCards transactions={transactions} />
 
-          <section style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 12 }}>
-            <h2>Dashboard</h2>
-            <p><strong>Net total (recent):</strong> ${monthTotal.toFixed(2)}</p>
-          </section>
-
-          <section style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 12 }}>
-            <h2>Add Transaction</h2>
-            <input
-              placeholder="Amount"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              style={{ display: 'block', marginBottom: 8, width: '100%' }}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1">
+            <AddTransactionForm
+              categories={categories}
+              onAdd={addTransaction}
+              addToast={addToast}
             />
-            <input
-              placeholder="Merchant"
-              value={merchant}
-              onChange={(e) => setMerchant(e.target.value)}
-              style={{ display: 'block', marginBottom: 8, width: '100%' }}
+          </div>
+          <div className="lg:col-span-2">
+            <TransactionList
+              transactions={transactions}
+              categories={categories}
+              onDelete={deleteTransaction}
             />
-            <select value={kind} onChange={(e) => setKind(e.target.value as 'expense' | 'income')} style={{ marginBottom: 8 }}>
-              <option value="expense">Expense</option>
-              <option value="income">Income</option>
-            </select>
-            <br />
-            <button onClick={addTransaction}>Save</button>
-          </section>
+          </div>
+        </div>
 
-          <section style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
-            <h2>Recent Transactions</h2>
-            {transactions.length === 0 ? <p>No transactions yet.</p> : (
-              <ul>
-                {transactions.map((t) => (
-                  <li key={t.id}>
-                    {new Date(t.occurred_at).toLocaleDateString()} — {t.kind} — ${Number(t.amount).toFixed(2)} {t.merchant ? `at ${t.merchant}` : ''}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        </>
-      )}
-    </main>
+        <Analytics transactions={transactions} categories={categories} />
+      </main>
+    </div>
   );
 }
