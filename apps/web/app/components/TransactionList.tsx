@@ -7,17 +7,19 @@ interface TransactionListProps {
   transactions: Tx[];
   categories: Category[];
   onDelete?: (id: string) => Promise<void>;
+  onDeleteMany?: (ids: string[]) => Promise<void>;
 }
 
 type SortKey = 'newest' | 'oldest' | 'amount-high' | 'amount-low';
 
-export default function TransactionList({ transactions, categories, onDelete }: TransactionListProps) {
+export default function TransactionList({ transactions, categories, onDelete, onDeleteMany }: TransactionListProps) {
   const [filterKind, setFilterKind] = useState<'all' | 'expense' | 'income'>('all');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterFrom, setFilterFrom] = useState('');
   const [filterTo, setFilterTo] = useState('');
   const [sort, setSort] = useState<SortKey>('newest');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingMany, setDeletingMany] = useState(false);
 
   const filtered = useMemo(() => {
     let list = [...transactions];
@@ -54,11 +56,25 @@ export default function TransactionList({ transactions, categories, onDelete }: 
 
   async function handleDelete(id: string) {
     if (!onDelete) return;
+    if (!window.confirm('Delete this transaction?')) return;
     setDeletingId(id);
     try {
       await onDelete(id);
     } finally {
       setDeletingId(null);
+    }
+  }
+
+  async function handleDeleteFiltered() {
+    if (!onDeleteMany || filtered.length === 0) return;
+    const ids = filtered.map((t) => t.id);
+    const confirmText = `Delete ${ids.length} visible transaction${ids.length !== 1 ? 's' : ''}?`;
+    if (!window.confirm(confirmText)) return;
+    setDeletingMany(true);
+    try {
+      await onDeleteMany(ids);
+    } finally {
+      setDeletingMany(false);
     }
   }
 
@@ -96,10 +112,19 @@ export default function TransactionList({ transactions, categories, onDelete }: 
 
         {(filterKind !== 'all' || filterCategory || filterFrom || filterTo) && (
           <button
-            className="ml-auto text-xs text-gray-400 hover:text-gray-600"
+            className="text-xs text-gray-400 hover:text-gray-600"
             onClick={() => { setFilterKind('all'); setFilterCategory(''); setFilterFrom(''); setFilterTo(''); }}
           >
             Clear filters
+          </button>
+        )}
+        {onDeleteMany && filtered.length > 0 && (
+          <button
+            disabled={deletingMany}
+            className="ml-auto text-xs text-red-500 hover:text-red-600 disabled:opacity-50"
+            onClick={handleDeleteFiltered}
+          >
+            {deletingMany ? 'Deleting...' : `Delete visible (${filtered.length})`}
           </button>
         )}
       </div>
@@ -156,10 +181,10 @@ export default function TransactionList({ transactions, categories, onDelete }: 
                       <button
                         disabled={deletingId === t.id}
                         onClick={() => handleDelete(t.id)}
-                        className="text-gray-300 hover:text-red-400 transition-colors text-xs disabled:opacity-40"
+                        className="text-gray-400 hover:text-red-500 transition-colors text-xs disabled:opacity-40"
                         title="Delete"
                       >
-                        ✕
+                        Delete
                       </button>
                     </td>
                   )}

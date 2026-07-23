@@ -54,7 +54,7 @@ export default function HomePage() {
         supabase.from('categories').select('id, name, kind').eq('user_id', uid).order('name'),
         supabase
           .from('planned_expenses')
-          .select('id, title, amount, due_date, status')
+          .select('id, title, amount, due_date, recurrence, status')
           .eq('user_id', uid)
           .order('due_date', { ascending: true })
           .limit(100),
@@ -195,7 +195,12 @@ export default function HomePage() {
     await loadData(user.id);
   }
 
-  async function addGoal(data: { title: string; amount: number; due_date: string }) {
+  async function addGoal(data: {
+    title: string;
+    amount: number;
+    due_date: string;
+    recurrence: 'none' | 'monthly' | 'yearly';
+  }) {
     if (!user) return;
     if (!accountId) {
       addToast('Unable to add goal. Account initialization failed — please refresh.', 'error');
@@ -207,6 +212,7 @@ export default function HomePage() {
       title: data.title.trim(),
       amount: data.amount,
       due_date: data.due_date,
+      recurrence: data.recurrence,
       status: 'planned',
     });
 
@@ -230,6 +236,17 @@ export default function HomePage() {
     }
     setTransactions((prev) => prev.filter((t) => t.id !== id));
     addToast('Transaction deleted.', 'info');
+  }
+
+  async function deleteTransactions(ids: string[]) {
+    if (!user || ids.length === 0) return;
+    const { error } = await supabase.from('transactions').delete().eq('user_id', user.id).in('id', ids);
+    if (error) {
+      addToast(error.message, 'error');
+      return;
+    }
+    setTransactions((prev) => prev.filter((t) => !ids.includes(t.id)));
+    addToast(`${ids.length} transaction${ids.length !== 1 ? 's' : ''} deleted.`, 'info');
   }
 
   if (loading) {
@@ -270,7 +287,12 @@ export default function HomePage() {
             </div>
           </div>
           <div className="lg:col-span-2">
-            <TransactionList transactions={transactions} categories={categories} onDelete={deleteTransaction} />
+            <TransactionList
+              transactions={transactions}
+              categories={categories}
+              onDelete={deleteTransaction}
+              onDeleteMany={deleteTransactions}
+            />
           </div>
         </div>
 
