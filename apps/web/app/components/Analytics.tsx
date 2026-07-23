@@ -68,7 +68,7 @@ export default function Analytics({ transactions, categories }: AnalyticsProps) 
     return Array.from(map.values())
       .sort((a, b) => b.total - a.total)
       .slice(0, 8);
-  }, [transactions, categories]);
+  }, [transactions]);
 
   const maxCategory = useMemo(
     () => Math.max(...categoryBreakdown.map((c) => c.total), 1),

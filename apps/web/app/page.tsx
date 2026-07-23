@@ -138,23 +138,30 @@ export default function HomePage() {
   }) {
     if (!user) return;
 
-    // Always ensure account exists before inserting
-    let { data: accounts } = await supabase
+    // ensureUserSetup guarantees an account exists; fetch it (or create if missing).
+    const { data: accounts, error: accError } = await supabase
       .from('accounts')
       .select('id')
       .eq('user_id', user.id)
       .limit(1);
 
-    if (!accounts || accounts.length === 0) {
-      const { data: newAcc } = await supabase
+    if (accError) throw accError;
+
+    let accountId = accounts?.[0]?.id;
+    if (!accountId) {
+      // Fallback: create account and retrieve its id atomically
+      const { data: newAcc, error: createErr } = await supabase
         .from('accounts')
-        .insert({ user_id: user.id, name: 'Main Account', type: 'wallet', starting_balance: 0 })
+        .upsert(
+          { user_id: user.id, name: 'Main Account', type: 'wallet', starting_balance: 0 },
+          { onConflict: 'user_id', ignoreDuplicates: false }
+        )
         .select('id')
         .single();
-      accounts = newAcc ? [newAcc] : [];
+      if (createErr) throw new Error('Could not find or create an account. Please refresh and try again.');
+      accountId = newAcc?.id;
     }
 
-    const accountId = accounts?.[0]?.id;
     if (!accountId) throw new Error('Could not find or create an account. Please refresh and try again.');
 
     const { error } = await supabase.from('transactions').insert({
