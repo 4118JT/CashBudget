@@ -8,6 +8,7 @@ import AuthForm from './components/AuthForm';
 import GoalsPanel from './components/GoalsPanel';
 import LoansPanel from './components/LoansPanel';
 import NavBar from './components/NavBar';
+import PlaidPanel from './components/PlaidPanel';
 import RecurringPanel from './components/RecurringPanel';
 import SummaryCards from './components/SummaryCards';
 import { ToastContainer, useToasts } from './components/Toast';
@@ -361,6 +362,9 @@ export default function HomePage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
             <AddTransactionForm categories={categories} onAdd={addTransaction} addToast={addToast} />
+            <div className="mt-6">
+              <PlaidPanel onSynced={() => loadData(user.id)} addToast={addToast} />
+            </div>
             <div className="mt-6">
               <GoalsPanel
                 goals={goals}

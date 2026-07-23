@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { Tx } from './types';
 
 interface SummaryCardsProps {
@@ -24,6 +24,7 @@ function MomBadge({ current, previous }: { current: number; previous: number }) 
 }
 
 export default function SummaryCards({ transactions }: SummaryCardsProps) {
+  const [view, setView] = useState<'monthly' | 'alltime'>('monthly');
   const stats = useMemo(() => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -97,35 +98,67 @@ export default function SummaryCards({ transactions }: SummaryCardsProps) {
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
 
   return (
-    <div className="space-y-6">
-      <section>
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">This Month</h2>
-          <p className="text-sm text-gray-500">Current month totals and trends compared with last month.</p>
+    <div className="space-y-4">
+      {/* Header bar with toggle */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">
+            {view === 'monthly' ? 'This Month' : 'All Time'}
+          </h2>
+          <p className="text-sm text-gray-400 mt-0.5">
+            {view === 'monthly'
+              ? 'Current month totals vs last month'
+              : 'Lifetime totals across all transactions'}
+          </p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Income */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <p className="text-sm font-medium text-gray-500">Income (this month)</p>
-            <p className="mt-1 text-2xl font-bold text-green-600">{fmt(stats.income)}</p>
+
+        {/* Toggle switch */}
+        <div className="flex items-center gap-1 bg-gray-100 rounded-full p-1">
+          <button
+            onClick={() => setView('monthly')}
+            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${
+              view === 'monthly'
+                ? 'bg-indigo-600 text-white shadow'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Monthly
+          </button>
+          <button
+            onClick={() => setView('alltime')}
+            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${
+              view === 'alltime'
+                ? 'bg-violet-600 text-white shadow'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            All Time
+          </button>
+        </div>
+      </div>
+
+      {/* Monthly view */}
+      {view === 'monthly' && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-green-500 col-span-1">
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Income</p>
+            <p className="mt-1 text-xl font-bold text-green-600 truncate">{fmt(stats.income)}</p>
             <div className="mt-2">
               <MomBadge current={stats.income} previous={stats.lastIncome} />
             </div>
           </div>
 
-          {/* Expenses */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <p className="text-sm font-medium text-gray-500">Expenses (this month)</p>
-            <p className="mt-1 text-2xl font-bold text-red-600">{fmt(stats.expense)}</p>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-red-500 col-span-1">
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Expenses</p>
+            <p className="mt-1 text-xl font-bold text-red-600 truncate">{fmt(stats.expense)}</p>
             <div className="mt-2">
               <MomBadge current={stats.expense} previous={stats.lastExpense} />
             </div>
           </div>
 
-          {/* Net */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <p className="text-sm font-medium text-gray-500">Net balance</p>
-            <p className={`mt-1 text-2xl font-bold ${stats.net >= 0 ? 'text-indigo-600' : 'text-orange-600'}`}>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-indigo-500 col-span-1">
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Net</p>
+            <p className={`mt-1 text-xl font-bold truncate ${stats.net >= 0 ? 'text-indigo-600' : 'text-orange-600'}`}>
               {fmt(stats.net)}
             </p>
             <div className="mt-2">
@@ -133,96 +166,84 @@ export default function SummaryCards({ transactions }: SummaryCardsProps) {
             </div>
           </div>
 
-          {/* Savings Rate */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <p className="text-sm font-medium text-gray-500">Savings rate</p>
-            <p className={`mt-1 text-2xl font-bold ${(stats.savingsRate ?? 0) >= 0 ? 'text-teal-600' : 'text-orange-600'}`}>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-teal-500 col-span-1">
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Savings Rate</p>
+            <p className={`mt-1 text-xl font-bold ${(stats.savingsRate ?? 0) >= 0 ? 'text-teal-600' : 'text-orange-600'}`}>
               {stats.savingsRate === null ? '—' : `${stats.savingsRate.toFixed(1)}%`}
             </p>
-            <p className="mt-1 text-xs text-gray-400">of income saved this month</p>
+            <p className="mt-1.5 text-xs text-gray-400">of income</p>
           </div>
 
-          {/* Avg Daily Expense */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <p className="text-sm font-medium text-gray-500">Avg daily spend</p>
-            <p className="mt-1 text-2xl font-bold text-gray-800">{fmt(stats.avgDailyExpense)}</p>
-            <p className="mt-1 text-xs text-gray-400">per day so far this month</p>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-amber-500 col-span-1">
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Daily avg</p>
+            <p className="mt-1 text-xl font-bold text-gray-800 truncate">{fmt(stats.avgDailyExpense)}</p>
+            <p className="mt-1.5 text-xs text-gray-400">per day</p>
           </div>
 
-          {/* Top Category */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <p className="text-sm font-medium text-gray-500">Top expense category</p>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-pink-500 col-span-1">
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Top category</p>
             {stats.topCategory ? (
               <>
-                <p className="mt-1 text-xl font-bold text-gray-800 truncate">{stats.topCategory[0]}</p>
-                <p className="mt-0.5 text-sm font-semibold text-red-500">{fmt(stats.topCategory[1])}</p>
+                <p className="mt-1 text-sm font-bold text-gray-800 truncate leading-tight">{stats.topCategory[0]}</p>
+                <p className="mt-1 text-xs font-semibold text-red-500">{fmt(stats.topCategory[1])}</p>
               </>
             ) : (
-              <p className="mt-1 text-2xl font-bold text-gray-300">—</p>
+              <p className="mt-1 text-xl font-bold text-gray-300">—</p>
             )}
           </div>
         </div>
-      </section>
+      )}
 
-      <section>
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">All Time</h2>
-          <p className="text-sm text-gray-500">Lifetime totals so you can compare them directly with this month.</p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Lifetime Income */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <p className="text-sm font-medium text-gray-500">Total income</p>
-            <p className="mt-1 text-2xl font-bold text-green-600">{fmt(stats.lifetimeIncome)}</p>
-            <p className="mt-1 text-xs text-gray-400">across all time</p>
+      {/* All Time view */}
+      {view === 'alltime' && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-green-400 col-span-1">
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Income</p>
+            <p className="mt-1 text-xl font-bold text-green-600 truncate">{fmt(stats.lifetimeIncome)}</p>
+            <p className="mt-1.5 text-xs text-gray-400">all time</p>
           </div>
 
-          {/* Lifetime Expenses */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <p className="text-sm font-medium text-gray-500">Total expenses</p>
-            <p className="mt-1 text-2xl font-bold text-red-600">{fmt(stats.lifetimeExpense)}</p>
-            <p className="mt-1 text-xs text-gray-400">across all time</p>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-red-400 col-span-1">
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Expenses</p>
+            <p className="mt-1 text-xl font-bold text-red-600 truncate">{fmt(stats.lifetimeExpense)}</p>
+            <p className="mt-1.5 text-xs text-gray-400">all time</p>
           </div>
 
-          {/* Lifetime Net */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <p className="text-sm font-medium text-gray-500">Net balance</p>
-            <p className={`mt-1 text-2xl font-bold ${stats.lifetimeNet >= 0 ? 'text-indigo-600' : 'text-orange-600'}`}>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-indigo-400 col-span-1">
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Net</p>
+            <p className={`mt-1 text-xl font-bold truncate ${stats.lifetimeNet >= 0 ? 'text-indigo-600' : 'text-orange-600'}`}>
               {fmt(stats.lifetimeNet)}
             </p>
-            <p className="mt-1 text-xs text-gray-400">income minus expenses, all time</p>
+            <p className="mt-1.5 text-xs text-gray-400">all time</p>
           </div>
 
-          {/* Lifetime Savings Rate */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <p className="text-sm font-medium text-gray-500">Overall savings rate</p>
-            <p className={`mt-1 text-2xl font-bold ${(stats.lifetimeSavingsRate ?? 0) >= 0 ? 'text-teal-600' : 'text-orange-600'}`}>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-teal-400 col-span-1">
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Savings Rate</p>
+            <p className={`mt-1 text-xl font-bold ${(stats.lifetimeSavingsRate ?? 0) >= 0 ? 'text-teal-600' : 'text-orange-600'}`}>
               {stats.lifetimeSavingsRate === null ? '—' : `${stats.lifetimeSavingsRate.toFixed(1)}%`}
             </p>
-            <p className="mt-1 text-xs text-gray-400">of all income saved</p>
+            <p className="mt-1.5 text-xs text-gray-400">of income</p>
           </div>
 
-          {/* Avg Monthly Expense */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <p className="text-sm font-medium text-gray-500">Avg monthly spend</p>
-            <p className="mt-1 text-2xl font-bold text-gray-800">{fmt(stats.avgMonthlyExpense)}</p>
-            <p className="mt-1 text-xs text-gray-400">over {stats.distinctMonths} month{stats.distinctMonths !== 1 ? 's' : ''}</p>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-amber-400 col-span-1">
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Avg/month</p>
+            <p className="mt-1 text-xl font-bold text-gray-800 truncate">{fmt(stats.avgMonthlyExpense)}</p>
+            <p className="mt-1.5 text-xs text-gray-400">{stats.distinctMonths} month{stats.distinctMonths !== 1 ? 's' : ''}</p>
           </div>
 
-          {/* Lifetime Top Category */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <p className="text-sm font-medium text-gray-500">Top expense category</p>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-pink-400 col-span-1">
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Top category</p>
             {stats.lifetimeTopCategory ? (
               <>
-                <p className="mt-1 text-xl font-bold text-gray-800 truncate">{stats.lifetimeTopCategory[0]}</p>
-                <p className="mt-0.5 text-sm font-semibold text-red-500">{fmt(stats.lifetimeTopCategory[1])}</p>
+                <p className="mt-1 text-sm font-bold text-gray-800 truncate leading-tight">{stats.lifetimeTopCategory[0]}</p>
+                <p className="mt-1 text-xs font-semibold text-red-500">{fmt(stats.lifetimeTopCategory[1])}</p>
               </>
             ) : (
-              <p className="mt-1 text-2xl font-bold text-gray-300">—</p>
+              <p className="mt-1 text-xl font-bold text-gray-300">—</p>
             )}
           </div>
         </div>
-      </section>
+      )}
     </div>
   );
 }

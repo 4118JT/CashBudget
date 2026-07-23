@@ -25,7 +25,7 @@ interface AnalyticsProps {
   categories: Category[];
 }
 
-type Period = '3' | '6' | '12';
+type Period = '1' | '3' | '6' | '12';
 type KindFilter = 'all' | 'expense' | 'income';
 
 const PALETTE = [
@@ -192,39 +192,39 @@ export default function Analytics({ transactions, categories }: AnalyticsProps) 
 
   if (transactions.length === 0) return null;
 
-  const selectCls =
-    'rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400';
+  const PERIOD_OPTIONS: { value: Period; label: string }[] = [
+    { value: '1', label: '1 Month' },
+    { value: '3', label: '3 Months' },
+    { value: '6', label: '6 Months' },
+    { value: '12', label: '1 Year' },
+  ];
 
   return (
     <div className="space-y-4">
       {/* Controls */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-wrap gap-3 items-center">
-        <span className="text-sm font-semibold text-gray-700">Analytics</span>
+      <div className="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-xl shadow-md p-4 flex flex-wrap gap-3 items-center">
+        <span className="text-sm font-bold text-white tracking-wide">📊 Analytics</span>
 
         {/* Period */}
-        <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs">
-          {(['3', '6', '12'] as Period[]).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`px-3 py-1.5 font-medium transition-colors ${
-                period === p ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              {p}mo
-            </button>
+        <select
+          className="rounded-lg border border-indigo-300 px-2.5 py-1.5 text-xs font-medium text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-white/60"
+          value={period}
+          onChange={(e) => setPeriod(e.target.value as Period)}
+        >
+          {PERIOD_OPTIONS.map(({ value, label }) => (
+            <option key={value} value={value}>{label}</option>
           ))}
-        </div>
+        </select>
 
         {/* Kind filter */}
-        <select className={selectCls} value={kindFilter} onChange={(e) => setKindFilter(e.target.value as KindFilter)}>
+        <select className="rounded-lg border border-indigo-300 px-2.5 py-1.5 text-xs font-medium text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-white/60" value={kindFilter} onChange={(e) => setKindFilter(e.target.value as KindFilter)}>
           <option value="all">All types</option>
           <option value="expense">Expenses only</option>
           <option value="income">Income only</option>
         </select>
 
         {/* Category filter */}
-        <select className={selectCls} value={filterCategoryId} onChange={(e) => setFilterCategoryId(e.target.value)}>
+        <select className="rounded-lg border border-indigo-300 px-2.5 py-1.5 text-xs font-medium text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-white/60" value={filterCategoryId} onChange={(e) => setFilterCategoryId(e.target.value)}>
           <option value="">All categories</option>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>{c.name}</option>
@@ -234,7 +234,7 @@ export default function Analytics({ transactions, categories }: AnalyticsProps) 
         {/* Reset */}
         {(kindFilter !== 'all' || filterCategoryId) && (
           <button
-            className="text-xs text-gray-400 hover:text-gray-600 ml-auto"
+            className="text-xs text-white/70 hover:text-white ml-auto underline underline-offset-2"
             onClick={() => { setKindFilter('all'); setFilterCategoryId(''); }}
           >
             Clear filters
@@ -245,7 +245,7 @@ export default function Analytics({ transactions, categories }: AnalyticsProps) 
       {/* Grid row 1: Monthly Overview + Net Trend */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Monthly Overview */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 border-t-4 border-t-indigo-500">
           <SectionToggle title="Monthly Overview" open={showMonthly} onToggle={() => setShowMonthly((v) => !v)} />
           {showMonthly && (
             <div className="mt-4 h-56">
@@ -265,7 +265,7 @@ export default function Analytics({ transactions, categories }: AnalyticsProps) 
         </div>
 
         {/* Net Trend */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 border-t-4 border-t-violet-500">
           <SectionToggle title="Net Trend" open={showTrend} onToggle={() => setShowTrend((v) => !v)} />
           {showTrend && (
             <div className="mt-4 h-56">
@@ -294,7 +294,7 @@ export default function Analytics({ transactions, categories }: AnalyticsProps) 
       {/* Grid row 2: Category bars + Pie */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Spending by Category (bars) */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 border-t-4 border-t-amber-500">
           <SectionToggle title="Spending by Category" open={showCategory} onToggle={() => setShowCategory((v) => !v)} />
           {showCategory && (
             categoryBreakdown.length === 0 ? (
@@ -324,7 +324,7 @@ export default function Analytics({ transactions, categories }: AnalyticsProps) 
         </div>
 
         {/* Category Pie */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 border-t-4 border-t-pink-500">
           <SectionToggle title="Category Share" open={showPie} onToggle={() => setShowPie((v) => !v)} />
           {showPie && (
             pieData.length === 0 ? (
@@ -365,7 +365,7 @@ export default function Analytics({ transactions, categories }: AnalyticsProps) 
       </div>
 
       {/* Top Merchants */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 border-t-4 border-t-orange-500">
         <SectionToggle title="Top Merchants" open={showMerchants} onToggle={() => setShowMerchants((v) => !v)} />
         {showMerchants && (
           topMerchants.length === 0 ? (
@@ -397,7 +397,7 @@ export default function Analytics({ transactions, categories }: AnalyticsProps) 
       {/* Grid row 3: Running Balance + Day of Week */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Running Balance */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 border-t-4 border-t-teal-500">
           <SectionToggle title="Running Balance" open={showRunningBalance} onToggle={() => setShowRunningBalance((v) => !v)} />
           {showRunningBalance && (
             runningBalance.length === 0 ? (
@@ -434,7 +434,7 @@ export default function Analytics({ transactions, categories }: AnalyticsProps) 
         </div>
 
         {/* Spending by Day of Week */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 border-t-4 border-t-cyan-500">
           <SectionToggle title="Spending by Day of Week" open={showDayOfWeek} onToggle={() => setShowDayOfWeek((v) => !v)} />
           {showDayOfWeek && (
             dayOfWeekSpend.every((d) => d.total === 0) ? (
