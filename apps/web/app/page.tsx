@@ -51,12 +51,10 @@ export default function HomePage() {
   );
 
   const ensureUserSetup = useCallback(async (uid: string) => {
-    // Profile
     await supabase
       .from('profiles')
       .upsert({ user_id: uid }, { onConflict: 'user_id', ignoreDuplicates: true });
 
-    // Default categories
     const { data: existingCats } = await supabase
       .from('categories')
       .select('id')
@@ -106,45 +104,29 @@ export default function HomePage() {
     setTransactions([]);
     setCategories([]);
   }
-async function addTransaction(data: {
-  amount: number;
-  merchant: string;
-  kind: 'expense' | 'income';
-  category_id: string | null;
-  occurred_at: string;
-  note: string | null;
-}) {
-  if (!user) return;
 
-  const { error } = await supabase.from('transactions').insert({
-    user_id: user.id,
-    amount: data.amount,
-    kind: data.kind,
-    merchant: data.merchant?.trim() || null,
-    category_id: data.category_id || null,
-    occurred_at: data.occurred_at,
-    note: data.note?.trim() || null,
-  });
+  async function addTransaction(data: {
+    amount: number;
+    merchant: string;
+    kind: 'expense' | 'income';
+    category_id: string | null;
+    occurred_at: string;
+    note: string | null;
+  }) {
+    if (!user) return;
 
-  if (error) {
-    console.error('Insert transaction error:', error);
-    throw new Error(error.message || JSON.stringify(error));
-  }
-
-  await loadData(user.id);
-}
-  if (error) {
-    console.error('Insert transaction error:', error);
-    throw new Error(error.message || JSON.stringify(error));
-  }
-
-  await loadData(user.id);
-}
-
-    const { error } = await supabase.from('transactions').insert(payload);
+    const { error } = await supabase.from('transactions').insert({
+      user_id: user.id,
+      amount: data.amount,
+      kind: data.kind,
+      merchant: data.merchant?.trim() || null,
+      category_id: data.category_id || null,
+      occurred_at: data.occurred_at,
+      note: data.note?.trim() || null,
+    });
 
     if (error) {
-      console.error('Insert transaction error:', error, payload);
+      console.error('Insert transaction error:', error);
       throw new Error(error.message || JSON.stringify(error));
     }
 
@@ -153,17 +135,11 @@ async function addTransaction(data: {
 
   async function deleteTransaction(id: string) {
     if (!user) return;
-    const { error } = await supabase
-      .from('transactions')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', user.id);
-
+    const { error } = await supabase.from('transactions').delete().eq('id', id).eq('user_id', user.id);
     if (error) {
       addToast(error.message, 'error');
       return;
     }
-
     setTransactions((prev) => prev.filter((t) => t.id !== id));
     addToast('Transaction deleted.', 'info');
   }
@@ -195,19 +171,10 @@ async function addTransaction(data: {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
-            <AddTransactionForm
-              categories={categories}
-              onAdd={addTransaction}
-              addToast={addToast}
-            />
+            <AddTransactionForm categories={categories} onAdd={addTransaction} addToast={addToast} />
           </div>
-
           <div className="lg:col-span-2">
-            <TransactionList
-              transactions={transactions}
-              categories={categories}
-              onDelete={deleteTransaction}
-            />
+            <TransactionList transactions={transactions} categories={categories} onDelete={deleteTransaction} />
           </div>
         </div>
 
