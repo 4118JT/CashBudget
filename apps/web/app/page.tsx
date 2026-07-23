@@ -73,7 +73,7 @@ export default function HomePage() {
       .from('accounts')
       .select('id')
       .eq('user_id', uid)
-      // Use the oldest account as the default primary account for transaction/goal inserts.
+      // Use the first created account as the default primary account for transaction/goal inserts.
       .order('created_at', { ascending: true })
       .limit(1);
 
