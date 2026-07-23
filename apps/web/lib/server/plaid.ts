@@ -1,31 +1,33 @@
 import crypto from 'crypto';
 import { Configuration, PlaidApi, PlaidEnvironments, type TransactionsSyncRequest } from 'plaid';
 
-const clientId = process.env.PLAID_CLIENT_ID;
-const secret = process.env.PLAID_SECRET;
-const env = process.env.PLAID_ENV ?? 'sandbox';
+export function getPlaidClient() {
+  const clientId = process.env.PLAID_CLIENT_ID;
+  const secret = process.env.PLAID_SECRET;
+  const env = process.env.PLAID_ENV ?? 'sandbox';
 
-if (!clientId || !secret) {
-  throw new Error('Missing PLAID_CLIENT_ID or PLAID_SECRET');
+  if (!clientId || !secret) {
+    throw new Error('Missing PLAID_CLIENT_ID or PLAID_SECRET');
+  }
+
+  const host = PlaidEnvironments[env as keyof typeof PlaidEnvironments];
+  if (!host) {
+    throw new Error(`Unsupported PLAID_ENV "${env}"`);
+  }
+
+  return new PlaidApi(
+    new Configuration({
+      basePath: host,
+      baseOptions: {
+        headers: {
+          'PLAID-CLIENT-ID': clientId,
+          'PLAID-SECRET': secret,
+          'Plaid-Version': '2020-09-14',
+        },
+      },
+    })
+  );
 }
-
-const host = PlaidEnvironments[env as keyof typeof PlaidEnvironments];
-if (!host) {
-  throw new Error(`Unsupported PLAID_ENV "${env}"`);
-}
-
-const config = new Configuration({
-  basePath: host,
-  baseOptions: {
-    headers: {
-      'PLAID-CLIENT-ID': clientId,
-      'PLAID-SECRET': secret,
-      'Plaid-Version': '2020-09-14',
-    },
-  },
-});
-
-export const plaidClient = new PlaidApi(config);
 
 function base64UrlToBuffer(input: string) {
   const normalized = input.replace(/-/g, '+').replace(/_/g, '/');
@@ -52,7 +54,7 @@ export async function verifyPlaidWebhook(rawBody: string, signedJwt: string) {
     throw new Error('Unsupported Plaid webhook signature header');
   }
 
-  const { data } = await plaidClient.webhookVerificationKeyGet({ key_id: header.kid });
+  const { data } = await getPlaidClient().webhookVerificationKeyGet({ key_id: header.kid });
   const key = crypto.createPublicKey({
     key: { ...data.key } as unknown as crypto.JsonWebKey,
     format: 'jwk',
@@ -85,6 +87,7 @@ export async function syncTransactions(
   cursor: string | null,
   count = 200
 ) {
+  const plaidClient = getPlaidClient();
   let nextCursor = cursor;
   let hasMore = true;
   const added: Awaited<ReturnType<PlaidApi['transactionsSync']>>['data']['added'] = [];
