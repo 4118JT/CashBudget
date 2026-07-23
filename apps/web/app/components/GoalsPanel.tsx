@@ -111,7 +111,6 @@ export default function GoalsPanel({ goals, onAddGoal, addToast, disabledReason 
           {saving ? 'Saving...' : disabled ? 'Goals unavailable' : 'Add Goal'}
         </button>
       </form>
-
       {disabledReason ? <p className="mt-3 text-xs text-amber-600">{disabledReason}</p> : null}
 
       <div className="mt-4 space-y-2">
