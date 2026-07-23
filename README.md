@@ -25,6 +25,7 @@ A polished personal finance tracker built with **Next.js 14**, **Supabase**, and
   - `supabase/migrations/002_add_planned_expenses.sql`
   - `supabase/migrations/003_harden_rls_and_backfill_tables.sql`
   - `supabase/migrations/004_add_loans_and_recurring.sql`
+  - `supabase/migrations/005_add_plaid_integration.sql`
 
 ---
 
@@ -66,6 +67,7 @@ In the **Supabase SQL Editor**, run these in order:
 3. `supabase/migrations/002_add_planned_expenses.sql` — adds the `planned_expenses` table and RLS policy for savings goals on existing projects
 4. `supabase/migrations/003_harden_rls_and_backfill_tables.sql` — back-fills missing core tables and rebuilds per-operation RLS policies for authenticated users
 5. `supabase/migrations/004_add_loans_and_recurring.sql` — adds the `loans` and `recurring_payments` tables with RLS policies
+6. `supabase/migrations/005_add_plaid_integration.sql` — adds Plaid item/account mapping tables and extends transaction source values
 
 ### 5. Run locally
 
@@ -95,6 +97,14 @@ Open [http://localhost:3000](http://localhost:3000).
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public API key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key used by server routes |
+| `PLAID_CLIENT_ID` | Plaid client ID |
+| `PLAID_SECRET` | Plaid secret |
+| `PLAID_ENV` | Plaid environment (`sandbox`, `development`, or `production`) |
+| `PLAID_TOKEN_ENCRYPTION_KEYS` | Comma-separated key map (for example `v1:base64key`) |
+| `PLAID_TOKEN_ENCRYPTION_CURRENT_VERSION` | Active encryption key version (for example `v1`) |
+| `PLAID_WEBHOOK_URL` | Public webhook URL used for transaction update callbacks |
+| `PLAID_WEBHOOK_SECRET` | Shared secret expected in `x-plaid-webhook-secret` webhook header |
 | `EXPO_PUBLIC_SUPABASE_URL` | Same URL for the Expo mobile app |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Same key for the Expo mobile app |
 
