@@ -5,6 +5,7 @@ A polished personal finance tracker built with **Next.js 14**, **Supabase**, and
 - 🔐 Email/password authentication with auto-provisioned profile & account
 - 📊 Summary cards — income, expenses, and net balance for the current month
 - ➕ Add transactions with category, date, notes, and inline validation
+- 🎯 Add savings goals with amount and due date
 - 🔍 Filter by type / category / date range; sort by newest, oldest, or amount
 - 📈 Analytics — 6-month monthly overview + spending by category (CSS bar charts)
 - 🗑️ Delete transactions with confirmation toasts

@@ -16,3 +16,11 @@ export type Category = {
   name: string;
   kind: 'expense' | 'income';
 };
+
+export type Goal = {
+  id: string;
+  title: string;
+  amount: number;
+  due_date: string;
+  status: 'planned' | 'paid' | 'skipped';
+};
