@@ -75,17 +75,19 @@ export default function AddTransactionForm({
   }
 
   const inputCls = (field: string) =>
-    `block w-full rounded-lg border px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none ${
-      errors[field] ? 'border-red-400' : 'border-gray-300'
+    `block w-full rounded-xl border px-3 py-2.5 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-300 focus:outline-none focus:ring-4 ${
+      errors[field] ? 'border-red-400 focus:ring-red-100' : 'border-slate-200 focus:border-indigo-500 focus:ring-indigo-100'
     }`;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-      <h2 className="text-base font-semibold text-gray-900 mb-4">Add Transaction</h2>
+    <div className="surface-card p-5 sm:p-6">
+      <h2 className="mb-1 text-base font-bold text-slate-900">Add transaction</h2>
 
-      <form onSubmit={handleSubmit} className="space-y-3">
+      <p className="mb-5 text-sm text-slate-500">Capture income and spending as it happens.</p>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Amount ($)</label>
+          <label className="block mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Amount ($)</label>
           <input
             type="number"
             step="0.01"
@@ -99,15 +101,15 @@ export default function AddTransactionForm({
         </div>
 
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Type</label>
+          <label className="block mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Type</label>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => setKind('expense')}
-              className={`rounded-lg border px-3 py-2 text-sm ${
+              className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
                 kind === 'expense'
-                  ? 'bg-red-500 text-white border-red-500'
-                  : 'bg-white text-gray-700 border-gray-300'
+                  ? 'border-rose-500 bg-rose-500 text-white shadow-sm'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
               }`}
             >
               Expense
@@ -115,10 +117,10 @@ export default function AddTransactionForm({
             <button
               type="button"
               onClick={() => setKind('income')}
-              className={`rounded-lg border px-3 py-2 text-sm ${
+              className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
                 kind === 'income'
-                  ? 'bg-green-500 text-white border-green-500'
-                  : 'bg-white text-gray-700 border-gray-300'
+                  ? 'border-emerald-500 bg-emerald-500 text-white shadow-sm'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
               }`}
             >
               Income
@@ -127,7 +129,7 @@ export default function AddTransactionForm({
         </div>
 
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Merchant / Description</label>
+          <label className="block mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Merchant / Description</label>
           <input
             type="text"
             className={inputCls('merchant')}
@@ -139,9 +141,9 @@ export default function AddTransactionForm({
         </div>
 
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Category</label>
+          <label className="block mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Category</label>
           <select
-            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none"
+            className="block w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100"
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
           >
@@ -155,19 +157,19 @@ export default function AddTransactionForm({
         </div>
 
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Date</label>
+          <label className="block mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Date</label>
           <input
             type="date"
-            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none"
+            className="block w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100"
             value={occurredAt}
             onChange={(e) => setOccurredAt(e.target.value)}
           />
         </div>
 
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Notes (optional)</label>
+          <label className="block mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">Notes (optional)</label>
           <textarea
-            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none"
+            className="block w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100"
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Any details..."
@@ -178,7 +180,7 @@ export default function AddTransactionForm({
         <button
           type="submit"
           disabled={saving}
-          className="w-full rounded-lg bg-indigo-600 text-white py-2.5 text-sm font-medium hover:bg-indigo-700 disabled:opacity-60"
+          className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-200 transition hover:from-indigo-700 hover:to-violet-700 focus:outline-none focus:ring-4 focus:ring-indigo-200 disabled:opacity-60"
         >
           {saving ? 'Saving...' : 'Save Transaction'}
         </button>

@@ -335,8 +335,8 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-gray-400 text-sm">Loading…</p>
+      <div className="app-shell flex min-h-screen items-center justify-center">
+        <p className="text-sm font-medium text-slate-400">Loading…</p>
       </div>
     );
   }
@@ -351,11 +351,11 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="app-shell">
       <NavBar userEmail={user.email} onSignOut={signOut} />
       <ToastContainer toasts={toasts} />
 
-      <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+      <main className="mx-auto max-w-6xl space-y-7 px-4 py-7 sm:py-9">
         <SummaryCards transactions={transactions} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
