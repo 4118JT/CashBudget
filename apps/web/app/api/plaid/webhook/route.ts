@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { syncByPlaidItemId } from '../../../../lib/server/plaidSync';
 import { verifyPlaidWebhook } from '../../../../lib/server/plaid';
-import { supabaseAdmin } from '../../../../lib/server/supabase';
+import { getSupabaseAdmin } from '../../../../lib/server/supabase';
 
 type PlaidWebhookBody = {
   webhook_type?: string;
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (body.webhook_type === 'ITEM' && body.webhook_code === 'ERROR') {
-      await supabaseAdmin
+      await getSupabaseAdmin()
         .from('plaid_items')
         .update({
           item_status: 'error',
