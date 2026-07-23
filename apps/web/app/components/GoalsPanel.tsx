@@ -10,10 +10,16 @@ interface GoalsPanelProps {
   addToast: (msg: string, type?: ToastType) => void;
 }
 
+function getDefaultDueDate() {
+  const date = new Date();
+  date.setDate(date.getDate() + 30);
+  return date.toISOString().slice(0, 10);
+}
+
 export default function GoalsPanel({ goals, onAddGoal, addToast }: GoalsPanelProps) {
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
-  const [dueDate, setDueDate] = useState(new Date().toISOString().slice(0, 10));
+  const [dueDate, setDueDate] = useState(getDefaultDueDate());
   const [saving, setSaving] = useState(false);
 
   const fmt = (n: number) =>
@@ -39,7 +45,7 @@ export default function GoalsPanel({ goals, onAddGoal, addToast }: GoalsPanelPro
       });
       setTitle('');
       setAmount('');
-      setDueDate(new Date().toISOString().slice(0, 10));
+      setDueDate(getDefaultDueDate());
       addToast('Goal saved!', 'success');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to save goal';
@@ -54,14 +60,22 @@ export default function GoalsPanel({ goals, onAddGoal, addToast }: GoalsPanelPro
       <h2 className="text-base font-semibold text-gray-900 mb-4">Savings Goals</h2>
 
       <form onSubmit={handleSubmit} className="space-y-3">
+        <label htmlFor="goal-title" className="block text-sm text-gray-600 mb-1">
+          Goal title
+        </label>
         <input
+          id="goal-title"
           type="text"
           className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Goal title (e.g. New Console)"
         />
+        <label htmlFor="goal-amount" className="block text-sm text-gray-600 mb-1">
+          Amount
+        </label>
         <input
+          id="goal-amount"
           type="number"
           step="0.01"
           min="0"
@@ -70,7 +84,11 @@ export default function GoalsPanel({ goals, onAddGoal, addToast }: GoalsPanelPro
           onChange={(e) => setAmount(e.target.value)}
           placeholder="Amount"
         />
+        <label htmlFor="goal-due-date" className="block text-sm text-gray-600 mb-1">
+          Target date
+        </label>
         <input
+          id="goal-due-date"
           type="date"
           className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none"
           value={dueDate}

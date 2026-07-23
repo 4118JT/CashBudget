@@ -154,7 +154,7 @@ export default function HomePage() {
   }) {
     if (!user) return;
     if (!accountId) {
-      addToast('Unable to add transaction. Please sign out and sign back in.', 'error');
+      addToast('Unable to add transaction. Account initialization failed — please refresh.', 'error');
       return;
     }
 
@@ -180,7 +180,7 @@ export default function HomePage() {
   async function addGoal(data: { title: string; amount: number; due_date: string }) {
     if (!user) return;
     if (!accountId) {
-      addToast('Unable to add goal. Please sign out and sign back in.', 'error');
+      addToast('Unable to add goal. Account initialization failed — please refresh.', 'error');
       return;
     }
 
