@@ -22,5 +22,6 @@ export type Goal = {
   title: string;
   amount: number;
   due_date: string;
+  recurrence: 'none' | 'weekly' | 'monthly' | 'yearly';
   status: 'planned' | 'paid' | 'skipped';
 };

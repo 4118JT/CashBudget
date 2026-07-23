@@ -6,7 +6,12 @@ import type { Goal } from './types';
 
 interface GoalsPanelProps {
   goals: Goal[];
-  onAddGoal: (goal: { title: string; amount: number; due_date: string }) => Promise<void>;
+  onAddGoal: (goal: {
+    title: string;
+    amount: number;
+    due_date: string;
+    recurrence: 'none' | 'monthly' | 'yearly';
+  }) => Promise<void>;
   addToast: (msg: string, type?: ToastType) => void;
 }
 
@@ -20,6 +25,7 @@ export default function GoalsPanel({ goals, onAddGoal, addToast }: GoalsPanelPro
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [dueDate, setDueDate] = useState(getDefaultDueDate());
+  const [recurrence, setRecurrence] = useState<'none' | 'monthly' | 'yearly'>('none');
   const [saving, setSaving] = useState(false);
 
   const fmt = (n: number) =>
@@ -42,10 +48,12 @@ export default function GoalsPanel({ goals, onAddGoal, addToast }: GoalsPanelPro
         title: title.trim(),
         amount: Number(amount),
         due_date: dueDate,
+        recurrence,
       });
       setTitle('');
       setAmount('');
       setDueDate(getDefaultDueDate());
+      setRecurrence('none');
       addToast('Goal saved!', 'success');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to save goal';
@@ -94,6 +102,19 @@ export default function GoalsPanel({ goals, onAddGoal, addToast }: GoalsPanelPro
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
         />
+        <label htmlFor="goal-recurrence" className="block text-sm text-gray-600 mb-1">
+          Subscription
+        </label>
+        <select
+          id="goal-recurrence"
+          className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none"
+          value={recurrence}
+          onChange={(e) => setRecurrence(e.target.value as 'none' | 'monthly' | 'yearly')}
+        >
+          <option value="none">One-time</option>
+          <option value="monthly">Monthly</option>
+          <option value="yearly">Yearly</option>
+        </select>
         <button
           type="submit"
           disabled={saving}
@@ -114,7 +135,7 @@ export default function GoalsPanel({ goals, onAddGoal, addToast }: GoalsPanelPro
                 <span className="text-sm font-semibold text-teal-700">{fmt(Number(g.amount))}</span>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Due {new Date(g.due_date).toLocaleDateString('en-US')} · {g.status}
+                Due {new Date(g.due_date).toLocaleDateString('en-US')} · {g.recurrence === 'none' ? 'one-time' : g.recurrence} · {g.status}
               </p>
             </div>
           ))
