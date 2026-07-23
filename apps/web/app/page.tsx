@@ -10,7 +10,7 @@ import NavBar from './components/NavBar';
 import SummaryCards from './components/SummaryCards';
 import { ToastContainer, useToasts } from './components/Toast';
 import TransactionList from './components/TransactionList';
-import type { Category, Tx } from './components/types';
+import type { Category, Goal, Tx } from './components/types';
 
 const DEFAULT_EXPENSE_CATEGORIES = [
   'Food & Dining',
@@ -24,20 +24,13 @@ const DEFAULT_EXPENSE_CATEGORIES = [
   'Other',
 ];
 const DEFAULT_INCOME_CATEGORIES = ['Salary', 'Freelance', 'Investment', 'Other Income'];
-type GoalItem = {
-  id: string;
-  title: string;
-  amount: number;
-  due_date: string;
-  status: 'planned' | 'paid' | 'skipped';
-};
 
 export default function HomePage() {
   const { toasts, addToast } = useToasts();
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
   const [transactions, setTransactions] = useState<Tx[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [goals, setGoals] = useState<GoalItem[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [accountId, setAccountId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -66,7 +59,7 @@ export default function HomePage() {
       else setCategories((catRes.data as unknown as Category[]) ?? []);
 
       if (goalRes.error) addToast(goalRes.error.message, 'error');
-      else setGoals((goalRes.data as unknown as GoalItem[]) ?? []);
+      else setGoals((goalRes.data as unknown as Goal[]) ?? []);
     },
     [addToast]
   );
@@ -80,6 +73,7 @@ export default function HomePage() {
       .from('accounts')
       .select('id')
       .eq('user_id', uid)
+      // Use the oldest account as the default primary account for transaction/goal inserts.
       .order('created_at', { ascending: true })
       .limit(1);
 

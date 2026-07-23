@@ -2,14 +2,7 @@
 
 import { useState } from 'react';
 import type { ToastType } from './Toast';
-
-type Goal = {
-  id: string;
-  title: string;
-  amount: number;
-  due_date: string;
-  status: 'planned' | 'paid' | 'skipped';
-};
+import type { Goal } from './types';
 
 interface GoalsPanelProps {
   goals: Goal[];
