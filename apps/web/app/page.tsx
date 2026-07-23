@@ -24,6 +24,13 @@ const DEFAULT_EXPENSE_CATEGORIES = [
   'Other',
 ];
 const DEFAULT_INCOME_CATEGORIES = ['Salary', 'Freelance', 'Investment', 'Other Income'];
+const MISSING_PLANNED_EXPENSES_REASON =
+  'Savings goals are unavailable until the planned_expenses database migration is applied.';
+
+function isMissingPlannedExpensesTableError(error: { code?: string; message?: string } | null) {
+  const message = error?.message?.toLowerCase() ?? '';
+  return error?.code === 'PGRST205' || message.includes('planned_expenses') && message.includes('schema cache');
+}
 
 export default function HomePage() {
   const { toasts, addToast } = useToasts();
@@ -31,6 +38,7 @@ export default function HomePage() {
   const [transactions, setTransactions] = useState<Tx[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [goalsDisabledReason, setGoalsDisabledReason] = useState<string | null>(null);
   const [accountId, setAccountId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -58,8 +66,17 @@ export default function HomePage() {
       if (catRes.error) addToast(catRes.error.message, 'error');
       else setCategories((catRes.data as unknown as Category[]) ?? []);
 
-      if (goalRes.error) addToast(goalRes.error.message, 'error');
-      else setGoals((goalRes.data as unknown as Goal[]) ?? []);
+      if (goalRes.error) {
+        if (isMissingPlannedExpensesTableError(goalRes.error)) {
+          setGoals([]);
+          setGoalsDisabledReason(MISSING_PLANNED_EXPENSES_REASON);
+        } else {
+          addToast(goalRes.error.message, 'error');
+        }
+      } else {
+        setGoals((goalRes.data as unknown as Goal[]) ?? []);
+        setGoalsDisabledReason(null);
+      }
     },
     [addToast]
   );
@@ -141,6 +158,7 @@ export default function HomePage() {
     setTransactions([]);
     setCategories([]);
     setGoals([]);
+    setGoalsDisabledReason(null);
     setAccountId(null);
   }
 
@@ -183,7 +201,6 @@ export default function HomePage() {
       addToast('Unable to add goal. Account initialization failed — please refresh.', 'error');
       return;
     }
-
     const { error } = await supabase.from('planned_expenses').insert({
       user_id: user.id,
       account_id: accountId,
@@ -194,6 +211,10 @@ export default function HomePage() {
     });
 
     if (error) {
+      if (isMissingPlannedExpensesTableError(error)) {
+        setGoalsDisabledReason(MISSING_PLANNED_EXPENSES_REASON);
+        throw new Error(MISSING_PLANNED_EXPENSES_REASON);
+      }
       throw new Error(error.message || JSON.stringify(error));
     }
 
@@ -240,7 +261,12 @@ export default function HomePage() {
           <div className="lg:col-span-1">
             <AddTransactionForm categories={categories} onAdd={addTransaction} addToast={addToast} />
             <div className="mt-6">
-              <GoalsPanel goals={goals} onAddGoal={addGoal} addToast={addToast} />
+              <GoalsPanel
+                goals={goals}
+                onAddGoal={addGoal}
+                addToast={addToast}
+                disabledReason={goalsDisabledReason}
+              />
             </div>
           </div>
           <div className="lg:col-span-2">
