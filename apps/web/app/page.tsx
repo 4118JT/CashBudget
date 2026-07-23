@@ -115,19 +115,25 @@ export default function HomePage() {
     occurred_at: string;
     note: string | null;
   }) {
-    if (!user) return;
+  if (!user) return;
 
-    const payload = {
-      user_id: user.id,
-      amount: data.amount,
-      kind: data.kind,
-      merchant: data.merchant?.trim() || null,
-      category_id: data.category_id || null,
-      occurred_at: data.occurred_at,
-      note: data.note?.trim() || null,
-      status: 'confirmed',
-      source: 'manual',
-    };
+  const { error } = await supabase.from('transactions').insert({
+    user_id: user.id,
+    amount: data.amount,
+    kind: data.kind,
+    merchant: data.merchant?.trim() || null,
+    category_id: data.category_id || null,
+    occurred_at: data.occurred_at,
+    note: data.note?.trim() || null,
+  });
+
+  if (error) {
+    console.error('Insert transaction error:', error);
+    throw new Error(error.message || JSON.stringify(error));
+  }
+
+  await loadData(user.id);
+}
 
     const { error } = await supabase.from('transactions').insert(payload);
 
