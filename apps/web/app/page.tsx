@@ -54,7 +54,7 @@ export default function HomePage() {
           .select('id, amount, kind, merchant, occurred_at, status, category_id, note, categories(name, kind)')
           .eq('user_id', uid)
           .order('occurred_at', { ascending: false })
-          .limit(200),
+          .limit(2000),
         supabase.from('categories').select('id, name, kind').eq('user_id', uid).order('name'),
         supabase
           .from('planned_expenses')
