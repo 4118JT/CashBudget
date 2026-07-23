@@ -103,7 +103,7 @@ export default function GoalsPanel({ goals, onAddGoal, addToast }: GoalsPanelPro
           onChange={(e) => setDueDate(e.target.value)}
         />
         <label htmlFor="goal-recurrence" className="block text-sm text-gray-600 mb-1">
-          Subscription
+          Recurrence
         </label>
         <select
           id="goal-recurrence"
