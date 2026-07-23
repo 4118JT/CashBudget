@@ -6,11 +6,13 @@ import AddTransactionForm from './components/AddTransactionForm';
 import Analytics from './components/Analytics';
 import AuthForm from './components/AuthForm';
 import GoalsPanel from './components/GoalsPanel';
+import LoansPanel from './components/LoansPanel';
 import NavBar from './components/NavBar';
+import RecurringPanel from './components/RecurringPanel';
 import SummaryCards from './components/SummaryCards';
 import { ToastContainer, useToasts } from './components/Toast';
 import TransactionList from './components/TransactionList';
-import type { Category, Goal, Tx } from './components/types';
+import type { Category, Goal, Loan, RecurringPayment, Tx } from './components/types';
 
 const DEFAULT_EXPENSE_CATEGORIES = [
   'Food & Dining',
@@ -38,13 +40,15 @@ export default function HomePage() {
   const [transactions, setTransactions] = useState<Tx[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [loans, setLoans] = useState<Loan[]>([]);
+  const [recurring, setRecurring] = useState<RecurringPayment[]>([]);
   const [goalsDisabledReason, setGoalsDisabledReason] = useState<string | null>(null);
   const [accountId, setAccountId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(
     async (uid: string) => {
-      const [txRes, catRes, goalRes] = await Promise.all([
+      const [txRes, catRes, goalRes, loanRes, recurRes] = await Promise.all([
         supabase
           .from('transactions')
           .select('id, amount, kind, merchant, occurred_at, status, category_id, note, categories(name, kind)')
@@ -58,6 +62,16 @@ export default function HomePage() {
           .eq('user_id', uid)
           .order('due_date', { ascending: true })
           .limit(100),
+        supabase
+          .from('loans')
+          .select('id, name, lender, original_amount, remaining_balance, interest_rate, monthly_payment, next_due_date, status')
+          .eq('user_id', uid)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('recurring_payments')
+          .select('id, name, amount, frequency, next_due_date, category_id, is_active')
+          .eq('user_id', uid)
+          .order('next_due_date', { ascending: true }),
       ]);
 
       if (txRes.error) addToast(txRes.error.message, 'error');
@@ -77,6 +91,10 @@ export default function HomePage() {
         setGoals((goalRes.data as unknown as Goal[]) ?? []);
         setGoalsDisabledReason(null);
       }
+
+      // Loans and recurring payments are optional — silently skip if table doesn't exist yet
+      if (!loanRes.error) setLoans((loanRes.data as unknown as Loan[]) ?? []);
+      if (!recurRes.error) setRecurring((recurRes.data as unknown as RecurringPayment[]) ?? []);
     },
     [addToast]
   );
@@ -158,6 +176,8 @@ export default function HomePage() {
     setTransactions([]);
     setCategories([]);
     setGoals([]);
+    setLoans([]);
+    setRecurring([]);
     setGoalsDisabledReason(null);
     setAccountId(null);
   }
@@ -221,6 +241,70 @@ export default function HomePage() {
     await loadData(user.id);
   }
 
+  async function addLoan(data: {
+    name: string;
+    lender: string | null;
+    original_amount: number;
+    remaining_balance: number;
+    interest_rate: number;
+    monthly_payment: number;
+    next_due_date: string | null;
+  }) {
+    if (!user) return;
+    const { error } = await supabase.from('loans').insert({ user_id: user.id, ...data });
+    if (error) throw new Error(error.message);
+    await loadData(user.id);
+  }
+
+  async function markLoanPaidOff(id: string) {
+    if (!user) return;
+    const { error } = await supabase
+      .from('loans')
+      .update({ status: 'paid_off', remaining_balance: 0 })
+      .eq('id', id)
+      .eq('user_id', user.id);
+    if (error) throw new Error(error.message);
+    await loadData(user.id);
+  }
+
+  async function deleteLoan(id: string) {
+    if (!user) return;
+    const { error } = await supabase.from('loans').delete().eq('id', id).eq('user_id', user.id);
+    if (error) throw new Error(error.message);
+    setLoans((prev) => prev.filter((l) => l.id !== id));
+  }
+
+  async function addRecurring(data: {
+    name: string;
+    amount: number;
+    frequency: RecurringPayment['frequency'];
+    next_due_date: string;
+    category_id: string | null;
+  }) {
+    if (!user) return;
+    const { error } = await supabase.from('recurring_payments').insert({ user_id: user.id, ...data });
+    if (error) throw new Error(error.message);
+    await loadData(user.id);
+  }
+
+  async function toggleRecurring(id: string, is_active: boolean) {
+    if (!user) return;
+    const { error } = await supabase
+      .from('recurring_payments')
+      .update({ is_active })
+      .eq('id', id)
+      .eq('user_id', user.id);
+    if (error) throw new Error(error.message);
+    setRecurring((prev) => prev.map((r) => (r.id === id ? { ...r, is_active } : r)));
+  }
+
+  async function deleteRecurring(id: string) {
+    if (!user) return;
+    const { error } = await supabase.from('recurring_payments').delete().eq('id', id).eq('user_id', user.id);
+    if (error) throw new Error(error.message);
+    setRecurring((prev) => prev.filter((r) => r.id !== id));
+  }
+
   async function deleteTransaction(id: string) {
     if (!user) return;
     const { error } = await supabase.from('transactions').delete().eq('id', id).eq('user_id', user.id);
@@ -266,6 +350,25 @@ export default function HomePage() {
                 onAddGoal={addGoal}
                 addToast={addToast}
                 disabledReason={goalsDisabledReason}
+              />
+            </div>
+            <div className="mt-6">
+              <LoansPanel
+                loans={loans}
+                onAddLoan={addLoan}
+                onMarkPaidOff={markLoanPaidOff}
+                onDeleteLoan={deleteLoan}
+                addToast={addToast}
+              />
+            </div>
+            <div className="mt-6">
+              <RecurringPanel
+                recurring={recurring}
+                categories={categories}
+                onAdd={addRecurring}
+                onToggleActive={toggleRecurring}
+                onDelete={deleteRecurring}
+                addToast={addToast}
               />
             </div>
           </div>
