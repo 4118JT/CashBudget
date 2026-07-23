@@ -351,17 +351,29 @@ export default function HomePage() {
     );
   }
 
+  const firstName = user.email.split('@')[0].split(/[._-]/)[0];
+  const displayName = firstName ? firstName.charAt(0).toUpperCase() + firstName.slice(1) : 'there';
+  const thisMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const monthExpenses = transactions.filter((transaction) => transaction.kind === 'expense' && new Date(transaction.occurred_at) >= thisMonthStart).reduce((total, transaction) => total + Number(transaction.amount), 0);
+  const activeRecurring = recurring.filter((item) => item.is_active).length;
+
   return (
     <div className="min-h-screen bg-slate-100">
       <NavBar userEmail={user.email} onSignOut={signOut} />
       <ToastContainer toasts={toasts} />
 
       <main className="mx-auto max-w-7xl space-y-7 px-4 py-7 sm:px-6 lg:px-8">
-        <section className="rounded-2xl bg-slate-950 px-6 py-7 text-white shadow-xl shadow-slate-950/10 sm:px-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-300">Financial overview</p>
-          <div className="mt-2 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-            <div><h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Your money, in focus.</h1><p className="mt-1 text-sm text-slate-300">Review cash flow, recent activity, and plans from one secure workspace.</p></div>
-            <div className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-slate-300">Updated from your latest transactions</div>
+        <section id="overview" className="scroll-mt-24 overflow-hidden rounded-2xl bg-slate-950 px-6 py-7 text-white shadow-xl shadow-slate-950/10 sm:px-8">
+          <div className="flex flex-col justify-between gap-7 lg:flex-row lg:items-end">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-300">Financial overview</p>
+              <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Good to see you, {displayName}.</h1>
+              <p className="mt-2 max-w-xl text-sm text-slate-300">Here is your personal money snapshot for this month. Keep an eye on spending, plans, and the next move that matters.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:min-w-[360px]">
+              <div className="rounded-xl border border-slate-700 bg-slate-900/80 px-4 py-3"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Month spend</p><p className="mt-1 text-lg font-semibold">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(monthExpenses)}</p></div>
+              <div className="rounded-xl border border-slate-700 bg-slate-900/80 px-4 py-3"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Your plan</p><p className="mt-1 text-lg font-semibold">{goals.length + activeRecurring} active items</p></div>
+            </div>
           </div>
         </section>
 
@@ -369,12 +381,14 @@ export default function HomePage() {
 
         <div className="grid grid-cols-1 gap-7 lg:grid-cols-3">
           <aside className="space-y-6 lg:col-span-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Manage</p>
+            <div id="add-transaction" className="scroll-mt-24"><p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Quick actions</p>
             <AddTransactionForm categories={categories} onAdd={addTransaction} addToast={addToast} />
+            </div>
             <div>
               <PlaidPanel onSynced={() => loadData(user.id)} addToast={addToast} />
             </div>
-            <div>
+            <div id="planning" className="scroll-mt-24">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Plan ahead</p>
               <GoalsPanel
                 goals={goals}
                 onAddGoal={addGoal}
@@ -402,7 +416,8 @@ export default function HomePage() {
               />
             </div>
           </aside>
-          <section className="lg:col-span-2">
+          <section id="activity" className="scroll-mt-24 lg:col-span-2">
+            <div className="mb-3 flex items-center justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Activity</p><h2 className="mt-1 text-lg font-semibold text-slate-900">Recent transactions</h2></div><a href="#add-transaction" className="text-sm font-semibold text-indigo-600 hover:text-indigo-700">Add entry</a></div>
             <TransactionList
               transactions={transactions}
               categories={categories}
