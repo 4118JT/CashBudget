@@ -17,7 +17,11 @@ function parseKeys(): { current: KeyRecord; all: Map<string, Buffer> } {
     const [version, keyB64] = segment.split(':');
     if (!version || !keyB64) continue;
     const key = Buffer.from(keyB64, 'base64');
-    if (key.length !== 32) throw new Error(`Encryption key ${version} must decode to 32 bytes`);
+    if (key.length !== 32) {
+      throw new Error(
+        `Encryption key ${version} must be a base64-encoded 256-bit (32-byte) key`
+      );
+    }
     map.set(version, key);
   }
 

@@ -77,7 +77,7 @@ async function ensureMappedAccounts(input: {
       .insert(
         missing.map((a) => ({
           user_id: input.userId,
-          name: [a.name, a.mask ? `••${a.mask}` : null].filter(Boolean).join(' '),
+          name: [a.name, a.mask ? `**${a.mask}` : null].filter(Boolean).join(' '),
           type: 'bank',
           starting_balance: 0,
         }))

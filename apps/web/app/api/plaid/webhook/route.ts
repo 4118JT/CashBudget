@@ -14,11 +14,12 @@ const TX_WEBHOOKS = new Set(['SYNC_UPDATES_AVAILABLE', 'DEFAULT_UPDATE', 'INITIA
 export async function POST(request: NextRequest) {
   try {
     const expectedSecret = process.env.PLAID_WEBHOOK_SECRET;
-    if (expectedSecret) {
-      const providedSecret = request.headers.get('x-plaid-webhook-secret');
-      if (providedSecret !== expectedSecret) {
-        return NextResponse.json({ error: 'Unauthorized webhook' }, { status: 401 });
-      }
+    if (!expectedSecret) {
+      return NextResponse.json({ error: 'PLAID_WEBHOOK_SECRET is not configured' }, { status: 500 });
+    }
+    const providedSecret = request.headers.get('x-plaid-webhook-secret');
+    if (providedSecret !== expectedSecret) {
+      return NextResponse.json({ error: 'Unauthorized webhook' }, { status: 401 });
     }
 
     const body = (await request.json()) as PlaidWebhookBody;
