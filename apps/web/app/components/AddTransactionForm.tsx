@@ -6,13 +6,13 @@ import type { ToastType } from './Toast';
 
 interface AddTransactionFormProps {
   categories: Category[];
-  onAdd: (data: {
+  onAdd: (tx: {
     amount: number;
+    transaction_type: 'expense' | 'income';
     merchant: string;
-    kind: 'expense' | 'income';
     category_id: string | null;
     occurred_at: string;
-    note: string;
+    note: string | null;
   }) => Promise<void>;
   addToast: (msg: string, type?: ToastType) => void;
 }
