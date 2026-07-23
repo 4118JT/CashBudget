@@ -1,4 +1,5 @@
-import { Configuration, PlaidApi, PlaidEnvironments, type TransactionsSyncRequest } from 'plaid';
+import crypto from 'crypto';
+import { Configuration, PlaidApi, PlaidEnvironments, type JWKPublicKey, type TransactionsSyncRequest } from 'plaid';
 
 const clientId = process.env.PLAID_CLIENT_ID;
 const secret = process.env.PLAID_SECRET;
@@ -25,6 +26,59 @@ const config = new Configuration({
 });
 
 export const plaidClient = new PlaidApi(config);
+
+function base64UrlToBuffer(input: string) {
+  const normalized = input.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+  return Buffer.from(padded, 'base64');
+}
+
+function compareHex(expected: string, actual: string) {
+  const left = Buffer.from(expected.toLowerCase(), 'utf8');
+  const right = Buffer.from(actual.toLowerCase(), 'utf8');
+  return left.length === right.length && crypto.timingSafeEqual(left, right);
+}
+
+export async function verifyPlaidWebhook(rawBody: string, signedJwt: string) {
+  const parts = signedJwt.split('.');
+  if (parts.length !== 3) throw new Error('Malformed Plaid webhook signature');
+
+  const [encodedHeader, encodedPayload, encodedSignature] = parts;
+  const header = JSON.parse(base64UrlToBuffer(encodedHeader).toString('utf8')) as {
+    alg?: string;
+    kid?: string;
+  };
+  if (header.alg !== 'ES256' || !header.kid) {
+    throw new Error('Unsupported Plaid webhook signature header');
+  }
+
+  const { data } = await plaidClient.webhookVerificationKeyGet({ key_id: header.kid });
+  const key = crypto.createPublicKey({
+    key: data.key as JWKPublicKey,
+    format: 'jwk',
+  });
+
+  const verified = crypto.verify(
+    'sha256',
+    Buffer.from(`${encodedHeader}.${encodedPayload}`, 'utf8'),
+    { key, dsaEncoding: 'ieee-p1363' },
+    base64UrlToBuffer(encodedSignature)
+  );
+  if (!verified) throw new Error('Invalid Plaid webhook signature');
+
+  const payload = JSON.parse(base64UrlToBuffer(encodedPayload).toString('utf8')) as {
+    iat?: number;
+    request_body_sha256?: string;
+  };
+  if (!payload.iat || Math.abs(Math.floor(Date.now() / 1000) - payload.iat) > 300) {
+    throw new Error('Stale Plaid webhook signature');
+  }
+
+  const bodyHash = crypto.createHash('sha256').update(rawBody, 'utf8').digest('hex');
+  if (!payload.request_body_sha256 || !compareHex(payload.request_body_sha256, bodyHash)) {
+    throw new Error('Plaid webhook body hash mismatch');
+  }
+}
 
 export async function syncTransactions(
   accessToken: string,

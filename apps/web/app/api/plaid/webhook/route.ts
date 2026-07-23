@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { syncByPlaidItemId } from '../../../../lib/server/plaidSync';
+import { verifyPlaidWebhook } from '../../../../lib/server/plaid';
 import { supabaseAdmin } from '../../../../lib/server/supabase';
 
 type PlaidWebhookBody = {
@@ -14,21 +15,25 @@ const TX_WEBHOOKS = new Set(['SYNC_UPDATES_AVAILABLE', 'DEFAULT_UPDATE', 'INITIA
 
 export async function POST(request: NextRequest) {
   try {
-    const expectedSecret = process.env.PLAID_WEBHOOK_SECRET;
-    if (!expectedSecret) {
-      return NextResponse.json({ error: 'PLAID_WEBHOOK_SECRET is not configured' }, { status: 500 });
-    }
-    const providedSecret = request.headers.get('x-plaid-webhook-secret');
-    if (!providedSecret) {
-      return NextResponse.json({ error: 'Unauthorized webhook' }, { status: 401 });
-    }
-    const provided = Buffer.from(providedSecret);
-    const expected = Buffer.from(expectedSecret);
-    if (provided.length !== expected.length || !crypto.timingSafeEqual(provided, expected)) {
-      return NextResponse.json({ error: 'Unauthorized webhook' }, { status: 401 });
+    const rawBody = await request.text();
+    const plaidVerification = request.headers.get('plaid-verification');
+
+    if (plaidVerification) {
+      await verifyPlaidWebhook(rawBody, plaidVerification);
+    } else {
+      const expectedSecret = process.env.PLAID_WEBHOOK_SECRET;
+      const providedSecret = request.headers.get('x-plaid-webhook-secret');
+      if (!expectedSecret || !providedSecret) {
+        return NextResponse.json({ error: 'Unauthorized webhook' }, { status: 401 });
+      }
+      const provided = Buffer.from(providedSecret);
+      const expected = Buffer.from(expectedSecret);
+      if (provided.length !== expected.length || !crypto.timingSafeEqual(provided, expected)) {
+        return NextResponse.json({ error: 'Unauthorized webhook' }, { status: 401 });
+      }
     }
 
-    const body = (await request.json()) as PlaidWebhookBody;
+    const body = JSON.parse(rawBody) as PlaidWebhookBody;
     if (!body.item_id) return NextResponse.json({ ok: true });
 
     if (body.webhook_type === 'TRANSACTIONS' && body.webhook_code && TX_WEBHOOKS.has(body.webhook_code)) {

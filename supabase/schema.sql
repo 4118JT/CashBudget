@@ -46,8 +46,7 @@ create table if not exists transactions (
 );
 
 create unique index if not exists ux_transactions_user_external_ref
-on transactions(user_id, external_ref)
-where external_ref is not null;
+on transactions(user_id, external_ref);
 
 create index if not exists ix_transactions_user_occurred_at
 on transactions(user_id, occurred_at desc);

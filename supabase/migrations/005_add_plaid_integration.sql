@@ -87,6 +87,10 @@ create policy "delete own plaid_accounts"
 on plaid_accounts for delete to authenticated
 using (auth.uid() = user_id);
 
+drop index if exists ux_transactions_user_external_ref;
+create unique index if not exists ux_transactions_user_external_ref
+on transactions(user_id, external_ref);
+
 alter table transactions drop constraint if exists transactions_source_check;
 alter table transactions
   add constraint transactions_source_check

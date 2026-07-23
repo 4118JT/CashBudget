@@ -104,7 +104,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `PLAID_TOKEN_ENCRYPTION_KEYS` | Comma-separated key map (for example `v1:base64key`) |
 | `PLAID_TOKEN_ENCRYPTION_CURRENT_VERSION` | Active encryption key version (for example `v1`) |
 | `PLAID_WEBHOOK_URL` | Public webhook URL used for transaction update callbacks |
-| `PLAID_WEBHOOK_SECRET` | Shared secret expected in `x-plaid-webhook-secret` webhook header |
+| `PLAID_WEBHOOK_SECRET` | Optional fallback secret for proxy-forwarded webhooks using `x-plaid-webhook-secret` |
 | `EXPO_PUBLIC_SUPABASE_URL` | Same URL for the Expo mobile app |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Same key for the Expo mobile app |
 
