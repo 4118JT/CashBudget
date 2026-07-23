@@ -158,8 +158,9 @@ export default function HomePage() {
     occurred_at: string;
     note: string | null;
   }) {
-    if (!user || !accountId) {
-      addToast('No account found. Please sign out and sign back in.', 'error');
+    if (!user) return;
+    if (!accountId) {
+      addToast('Unable to add transaction. Please sign out and sign back in.', 'error');
       return;
     }
 
@@ -183,8 +184,9 @@ export default function HomePage() {
   }
 
   async function addGoal(data: { title: string; amount: number; due_date: string }) {
-    if (!user || !accountId) {
-      addToast('No account found. Please sign out and sign back in.', 'error');
+    if (!user) return;
+    if (!accountId) {
+      addToast('Unable to add goal. Please sign out and sign back in.', 'error');
       return;
     }
 
