@@ -207,27 +207,27 @@ export default function Analytics({ transactions, categories }: AnalyticsProps) 
 
         {/* Period */}
         <select
-          className="rounded-lg border border-white/30 px-2.5 py-1.5 text-xs font-medium text-white bg-white/20 backdrop-blur focus:outline-none focus:ring-2 focus:ring-white/60"
+          className="rounded-lg border border-indigo-300 px-2.5 py-1.5 text-xs font-medium text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-white/60"
           value={period}
           onChange={(e) => setPeriod(e.target.value as Period)}
         >
           {PERIOD_OPTIONS.map(({ value, label }) => (
-            <option key={value} value={value} className="text-gray-800 bg-white">{label}</option>
+            <option key={value} value={value}>{label}</option>
           ))}
         </select>
 
         {/* Kind filter */}
-        <select className="rounded-lg border border-white/30 px-2.5 py-1.5 text-xs font-medium text-white bg-white/20 backdrop-blur focus:outline-none focus:ring-2 focus:ring-white/60" value={kindFilter} onChange={(e) => setKindFilter(e.target.value as KindFilter)}>
-          <option value="all" className="text-gray-800 bg-white">All types</option>
-          <option value="expense" className="text-gray-800 bg-white">Expenses only</option>
-          <option value="income" className="text-gray-800 bg-white">Income only</option>
+        <select className="rounded-lg border border-indigo-300 px-2.5 py-1.5 text-xs font-medium text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-white/60" value={kindFilter} onChange={(e) => setKindFilter(e.target.value as KindFilter)}>
+          <option value="all">All types</option>
+          <option value="expense">Expenses only</option>
+          <option value="income">Income only</option>
         </select>
 
         {/* Category filter */}
-        <select className="rounded-lg border border-white/30 px-2.5 py-1.5 text-xs font-medium text-white bg-white/20 backdrop-blur focus:outline-none focus:ring-2 focus:ring-white/60" value={filterCategoryId} onChange={(e) => setFilterCategoryId(e.target.value)}>
-          <option value="" className="text-gray-800 bg-white">All categories</option>
+        <select className="rounded-lg border border-indigo-300 px-2.5 py-1.5 text-xs font-medium text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-white/60" value={filterCategoryId} onChange={(e) => setFilterCategoryId(e.target.value)}>
+          <option value="">All categories</option>
           {categories.map((c) => (
-            <option key={c.id} value={c.id} className="text-gray-800 bg-white">{c.name}</option>
+            <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </select>
 

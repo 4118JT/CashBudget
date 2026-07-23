@@ -167,7 +167,7 @@ export default function SummaryCards({ transactions }: SummaryCardsProps) {
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-teal-500 col-span-1">
-            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Saved</p>
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Savings Rate</p>
             <p className={`mt-1 text-xl font-bold ${(stats.savingsRate ?? 0) >= 0 ? 'text-teal-600' : 'text-orange-600'}`}>
               {stats.savingsRate === null ? '—' : `${stats.savingsRate.toFixed(1)}%`}
             </p>
@@ -218,7 +218,7 @@ export default function SummaryCards({ transactions }: SummaryCardsProps) {
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 border-t-4 border-t-teal-400 col-span-1">
-            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Saved</p>
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Savings Rate</p>
             <p className={`mt-1 text-xl font-bold ${(stats.lifetimeSavingsRate ?? 0) >= 0 ? 'text-teal-600' : 'text-orange-600'}`}>
               {stats.lifetimeSavingsRate === null ? '—' : `${stats.lifetimeSavingsRate.toFixed(1)}%`}
             </p>
