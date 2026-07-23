@@ -1,5 +1,3 @@
-# CashBudget
-
 A polished personal finance tracker built with **Next.js 14**, **Supabase**, and **Tailwind CSS**.
 
 ## Features
