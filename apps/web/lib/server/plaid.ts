@@ -74,7 +74,7 @@ export async function verifyPlaidWebhook(rawBody: string, signedJwt: string) {
     throw new Error('Stale Plaid webhook signature');
   }
 
-  const bodyHash = crypto.createHash('sha256').update(rawBody, 'utf8').digest('hex');
+  const bodyHash = crypto.createHash('sha256').update(Buffer.from(rawBody, 'utf8')).digest('hex');
   if (!payload.request_body_sha256 || !compareHex(payload.request_body_sha256, bodyHash)) {
     throw new Error('Plaid webhook body hash mismatch');
   }

@@ -26,8 +26,8 @@ export async function POST(request: NextRequest) {
       if (!expectedSecret || !providedSecret) {
         return NextResponse.json({ error: 'Unauthorized webhook' }, { status: 401 });
       }
-      const provided = Buffer.from(providedSecret);
-      const expected = Buffer.from(expectedSecret);
+      const provided = Buffer.from(providedSecret, 'utf8');
+      const expected = Buffer.from(expectedSecret, 'utf8');
       if (provided.length !== expected.length || !crypto.timingSafeEqual(provided, expected)) {
         return NextResponse.json({ error: 'Unauthorized webhook' }, { status: 401 });
       }
