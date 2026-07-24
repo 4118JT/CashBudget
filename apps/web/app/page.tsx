@@ -3,8 +3,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import AddTransactionForm from './components/AddTransactionForm';
+import AppleCashPanel from './components/AppleCashPanel';
+import AppleCashCsvImport from './components/AppleCashCsvImport';
 import Analytics from './components/Analytics';
 import AuthForm from './components/AuthForm';
+import FinancialPulse from './components/FinancialPulse';
 import GoalsPanel from './components/GoalsPanel';
 import LoansPanel from './components/LoansPanel';
 import NavBar from './components/NavBar';
@@ -13,7 +16,7 @@ import RecurringPanel from './components/RecurringPanel';
 import SummaryCards from './components/SummaryCards';
 import { ToastContainer, useToasts } from './components/Toast';
 import TransactionList from './components/TransactionList';
-import type { Category, Goal, Loan, RecurringPayment, Tx } from './components/types';
+import type { Account, Category, Goal, Loan, RecurringPayment, Tx } from './components/types';
 
 const DEFAULT_EXPENSE_CATEGORIES = [
   'Food & Dining',
@@ -39,6 +42,7 @@ export default function HomePage() {
   const { toasts, addToast } = useToasts();
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
   const [transactions, setTransactions] = useState<Tx[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
@@ -46,16 +50,18 @@ export default function HomePage() {
   const [goalsDisabledReason, setGoalsDisabledReason] = useState<string | null>(null);
   const [accountId, setAccountId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState<'overview' | 'activity' | 'planning' | 'analytics'>('overview');
 
   const loadData = useCallback(
     async (uid: string) => {
-      const [txRes, catRes, goalRes, loanRes, recurRes] = await Promise.all([
+      const [txRes, accountRes, catRes, goalRes, loanRes, recurRes] = await Promise.all([
         supabase
           .from('transactions')
-          .select('id, amount, kind, merchant, occurred_at, status, category_id, note, categories(name, kind)')
+          .select('id, account_id, amount, kind, merchant, occurred_at, status, category_id, note, categories(name, kind)')
           .eq('user_id', uid)
           .order('occurred_at', { ascending: false })
           .limit(2000),
+        supabase.from('accounts').select('id, name, type, starting_balance').eq('user_id', uid).order('created_at'),
         supabase.from('categories').select('id, name, kind').eq('user_id', uid).order('name'),
         supabase
           .from('planned_expenses')
@@ -77,6 +83,9 @@ export default function HomePage() {
 
       if (txRes.error) addToast(txRes.error.message, 'error');
       else setTransactions((txRes.data as unknown as Tx[]) ?? []);
+
+      if (accountRes.error) addToast(accountRes.error.message, 'error');
+      else setAccounts((accountRes.data as Account[]) ?? []);
 
       if (catRes.error) addToast(catRes.error.message, 'error');
       else setCategories((catRes.data as unknown as Category[]) ?? []);
@@ -175,6 +184,7 @@ export default function HomePage() {
     await supabase.auth.signOut();
     setUser(null);
     setTransactions([]);
+    setAccounts([]);
     setCategories([]);
     setGoals([]);
     setLoans([]);
@@ -188,18 +198,19 @@ export default function HomePage() {
     merchant: string;
     kind: 'expense' | 'income';
     category_id: string | null;
+    account_id: string;
     occurred_at: string;
     note: string | null;
   }) {
     if (!user) return;
-    if (!accountId) {
+    if (!data.account_id) {
       addToast('Unable to add transaction. Account initialization failed — please refresh.', 'error');
       return;
     }
 
     const { error } = await supabase.from('transactions').insert({
       user_id: user.id,
-      account_id: accountId,
+      account_id: data.account_id,
       amount: data.amount,
       kind: data.kind,
       merchant: data.merchant?.trim() || null,
@@ -312,6 +323,41 @@ export default function HomePage() {
     setRecurring((prev) => prev.filter((r) => r.id !== id));
   }
 
+  async function createAppleCashAccount(balance: number) {
+    if (!user) return;
+    const { data, error } = await supabase.from('accounts').insert({
+      user_id: user.id,
+      name: 'Apple Cash',
+      type: 'wallet',
+      starting_balance: balance,
+    }).select('id, name, type, starting_balance').single();
+    if (error) throw new Error(error.message);
+    if (data) setAccounts((current) => [...current, data as Account]);
+  }
+
+  async function updateAppleCashBalance(balance: number) {
+    const appleCash = accounts.find((account) => account.name === 'Apple Cash');
+    if (!appleCash) throw new Error('Apple Cash account was not found.');
+    const { error } = await supabase.from('accounts').update({ starting_balance: balance }).eq('id', appleCash.id).eq('user_id', user?.id);
+    if (error) throw new Error(error.message);
+    setAccounts((current) => current.map((account) => account.id === appleCash.id ? { ...account, starting_balance: balance } : account));
+  }
+
+  async function importAppleCashCsv(fileName: string, rows: { date: string; description: string; amount: number; kind: 'income' | 'expense'; externalRef: string }[]) {
+    if (!user) throw new Error('Please sign in again.');
+    const appleCash = accounts.find((account) => account.name === 'Apple Cash');
+    if (!appleCash) throw new Error('Create the Apple Cash account before importing.');
+    const { data: importedRows, error: importedRowsError } = await supabase.from('transactions').select('external_ref').eq('user_id', user.id).eq('account_id', appleCash.id).not('external_ref', 'is', null);
+    if (importedRowsError) throw new Error(importedRowsError.message);
+    const existingRefs = new Set((importedRows ?? []).map((transaction) => transaction.external_ref));
+    const uniqueRows = rows.filter((row) => !existingRefs.has(row.externalRef));
+    const { error } = await supabase.from('transactions').upsert(uniqueRows.map((row) => ({ user_id: user.id, account_id: appleCash.id, amount: row.amount, kind: row.kind, merchant: row.description, occurred_at: row.date, status: 'confirmed', source: 'import', external_ref: row.externalRef })), { onConflict: 'user_id,external_ref', ignoreDuplicates: true });
+    if (error) throw new Error(error.message);
+    await supabase.from('imports').insert({ user_id: user.id, filename: fileName, rows_total: rows.length, rows_inserted: uniqueRows.length, rows_duplicated: rows.length - uniqueRows.length });
+    await loadData(user.id);
+    return { inserted: uniqueRows.length, duplicates: rows.length - uniqueRows.length };
+  }
+
   async function deleteTransaction(id: string) {
     if (!user) return;
     const { error } = await supabase.from('transactions').delete().eq('id', id).eq('user_id', user.id);
@@ -336,8 +382,8 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-gray-400 text-sm">Loading…</p>
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <p className="text-slate-400 text-sm">Loading your workspace…</p>
       </div>
     );
   }
@@ -351,59 +397,32 @@ export default function HomePage() {
     );
   }
 
+  const firstName = user.email.split('@')[0].split(/[._-]/)[0];
+  const displayName = firstName ? firstName.charAt(0).toUpperCase() + firstName.slice(1) : 'there';
+  const thisMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const monthExpenses = transactions.filter((transaction) => transaction.kind === 'expense' && new Date(transaction.occurred_at) >= thisMonthStart).reduce((total, transaction) => total + Number(transaction.amount), 0);
+  const activeRecurring = recurring.filter((item) => item.is_active).length;
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <NavBar userEmail={user.email} onSignOut={signOut} />
+    <div className="min-h-screen bg-slate-100">
+      <NavBar userEmail={user.email} page={page} onNavigate={setPage} onSignOut={signOut} />
       <ToastContainer toasts={toasts} />
 
-      <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-        <SummaryCards transactions={transactions} />
+      <main className="mx-auto max-w-7xl space-y-7 px-4 py-7 sm:px-6 lg:px-8">
+        {page === 'overview' && <>
+          <section className="overflow-hidden rounded-2xl bg-slate-950 px-6 py-7 text-white shadow-xl shadow-slate-950/10 sm:px-8">
+            <div className="flex flex-col justify-between gap-7 lg:flex-row lg:items-end"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-300">Financial overview</p><h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Good to see you, {displayName}.</h1><p className="mt-2 max-w-xl text-sm text-slate-300">Your financial picture, without the noise. Review the essentials, then dive into activity or planning when you are ready.</p></div><div className="grid grid-cols-2 gap-3 sm:min-w-[360px]"><div className="rounded-xl border border-slate-700 bg-slate-900/80 px-4 py-3"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Month spend</p><p className="mt-1 text-lg font-semibold">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(monthExpenses)}</p></div><div className="rounded-xl border border-slate-700 bg-slate-900/80 px-4 py-3"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Your plan</p><p className="mt-1 text-lg font-semibold">{goals.length + activeRecurring} active items</p></div></div></div>
+          </section>
+          <SummaryCards transactions={transactions} />
+          <FinancialPulse transactions={transactions} goals={goals} loans={loans} recurring={recurring} />
+          <section className="grid gap-4 md:grid-cols-3"><button type="button" onClick={() => setPage('activity')} className="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-indigo-300 hover:shadow-md"><p className="text-xs font-semibold uppercase tracking-wider text-indigo-600">Activity</p><h2 className="mt-2 text-lg font-semibold text-slate-900">Track transactions</h2><p className="mt-1 text-sm text-slate-500">Add entries, filter history, and connect your bank.</p></button><button type="button" onClick={() => setPage('planning')} className="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-indigo-300 hover:shadow-md"><p className="text-xs font-semibold uppercase tracking-wider text-indigo-600">Planning</p><h2 className="mt-2 text-lg font-semibold text-slate-900">Stay ahead</h2><p className="mt-1 text-sm text-slate-500">Manage goals, recurring payments, and loans.</p></button><button type="button" onClick={() => setPage('analytics')} className="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-indigo-300 hover:shadow-md"><p className="text-xs font-semibold uppercase tracking-wider text-indigo-600">Analytics</p><h2 className="mt-2 text-lg font-semibold text-slate-900">Understand trends</h2><p className="mt-1 text-sm text-slate-500">Explore categories, merchants, and cash flow.</p></button></section>
+        </>}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1">
-            <AddTransactionForm categories={categories} onAdd={addTransaction} addToast={addToast} />
-            <div className="mt-6">
-              <PlaidPanel onSynced={() => loadData(user.id)} addToast={addToast} />
-            </div>
-            <div className="mt-6">
-              <GoalsPanel
-                goals={goals}
-                onAddGoal={addGoal}
-                addToast={addToast}
-                disabledReason={goalsDisabledReason}
-              />
-            </div>
-            <div className="mt-6">
-              <LoansPanel
-                loans={loans}
-                onAddLoan={addLoan}
-                onMarkPaidOff={markLoanPaidOff}
-                onDeleteLoan={deleteLoan}
-                addToast={addToast}
-              />
-            </div>
-            <div className="mt-6">
-              <RecurringPanel
-                recurring={recurring}
-                categories={categories}
-                onAdd={addRecurring}
-                onToggleActive={toggleRecurring}
-                onDelete={deleteRecurring}
-                addToast={addToast}
-              />
-            </div>
-          </div>
-          <div className="lg:col-span-2">
-            <TransactionList
-              transactions={transactions}
-              categories={categories}
-              onDelete={deleteTransaction}
-              onDeleteMany={deleteTransactions}
-            />
-          </div>
-        </div>
+        {page === 'activity' && <><section><p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-600">Activity</p><h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">Transactions and connected accounts</h1><p className="mt-2 text-sm text-slate-500">Add, review, and sync the activity that shapes your budget.</p></section><div className="grid gap-7 lg:grid-cols-3"><aside className="space-y-6"><AddTransactionForm categories={categories} accounts={accounts} defaultAccountId={accountId} onAdd={addTransaction} addToast={addToast} /><AppleCashPanel account={accounts.find((account) => account.name === 'Apple Cash') ?? null} transactions={transactions} onCreate={createAppleCashAccount} onUpdateBalance={updateAppleCashBalance} addToast={addToast} /><AppleCashCsvImport ready={accounts.some((account) => account.name === 'Apple Cash')} onImport={importAppleCashCsv} addToast={addToast} /><PlaidPanel onSynced={() => loadData(user.id)} addToast={addToast} /></aside><section className="lg:col-span-2"><TransactionList transactions={transactions} categories={categories} onDelete={deleteTransaction} onDeleteMany={deleteTransactions} /></section></div></>}
 
-        <Analytics transactions={transactions} categories={categories} />
+        {page === 'planning' && <><section><p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-600">Planning</p><h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">Make upcoming money decisions visible</h1><p className="mt-2 text-sm text-slate-500">Keep goals, debt, and recurring commitments together in one focused space.</p></section><div className="grid gap-6 lg:grid-cols-3"><GoalsPanel goals={goals} onAddGoal={addGoal} addToast={addToast} disabledReason={goalsDisabledReason} /><LoansPanel loans={loans} onAddLoan={addLoan} onMarkPaidOff={markLoanPaidOff} onDeleteLoan={deleteLoan} addToast={addToast} /><RecurringPanel recurring={recurring} categories={categories} onAdd={addRecurring} onToggleActive={toggleRecurring} onDelete={deleteRecurring} addToast={addToast} /></div></>}
+
+        {page === 'analytics' && <><section><p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-600">Analytics</p><h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">See how your money moves</h1><p className="mt-2 text-sm text-slate-500">Use filters and trends to spot meaningful changes in your spending.</p></section><Analytics transactions={transactions} categories={categories} /></>}
       </main>
     </div>
   );

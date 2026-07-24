@@ -1,7 +1,7 @@
 import { CountryCode, type AccountBase, type RemovedTransaction, type Transaction } from 'plaid';
 import { getPlaidClient, syncTransactions } from './plaid';
 import { decryptToken, encryptToken } from './tokenCrypto';
-import { supabaseAdmin } from './supabase';
+import { getSupabaseAdmin } from './supabase';
 
 type PlaidItemRow = {
   id: string;
@@ -33,7 +33,7 @@ export async function upsertPlaidItem(input: {
   institutionName: string | null;
 }) {
   const encrypted = encryptToken(input.accessToken);
-  const { error } = await supabaseAdmin.from('plaid_items').upsert(
+  const { error } = await getSupabaseAdmin().from('plaid_items').upsert(
     {
       user_id: input.userId,
       plaid_item_id: input.itemId,
@@ -59,7 +59,7 @@ async function ensureMappedAccounts(input: {
   accounts: AccountBase[];
 }) {
   const accountIds = input.accounts.map((a) => a.account_id);
-  const { data: existingMappings, error: mappingError } = await supabaseAdmin
+  const { data: existingMappings, error: mappingError } = await getSupabaseAdmin()
     .from('plaid_accounts')
     .select('plaid_account_id, app_account_id')
     .eq('user_id', input.userId)
@@ -73,7 +73,7 @@ async function ensureMappedAccounts(input: {
 
   if (missing.length > 0) {
     for (const account of missing) {
-      const { data: insertedAccount, error: accountInsertError } = await supabaseAdmin
+      const { data: insertedAccount, error: accountInsertError } = await getSupabaseAdmin()
         .from('accounts')
         .insert({
           user_id: input.userId,
@@ -88,7 +88,7 @@ async function ensureMappedAccounts(input: {
     }
   }
 
-  const { error: upsertError } = await supabaseAdmin.from('plaid_accounts').upsert(
+  const { error: upsertError } = await getSupabaseAdmin().from('plaid_accounts').upsert(
     input.accounts.map((a) => ({
       user_id: input.userId,
       plaid_item_id: input.itemId,
@@ -129,7 +129,7 @@ function normalizeTransaction(userId: string, mapping: Map<string, string>, tx: 
 async function removeDeletedTransactions(userId: string, removed: RemovedTransaction[]) {
   if (removed.length === 0) return;
   const refs = removed.map((t) => t.transaction_id);
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from('transactions')
     .delete()
     .eq('user_id', userId)
@@ -139,7 +139,7 @@ async function removeDeletedTransactions(userId: string, removed: RemovedTransac
 }
 
 async function getPlaidItemOrThrow(userId: string, plaidItemId: string) {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from('plaid_items')
     .select('*')
     .eq('user_id', userId)
@@ -160,7 +160,7 @@ export async function syncPlaidItemForUser(userId: string, plaidItemId: string) 
 
   if (decrypted.requiresRotation) {
     const rotated = encryptToken(decrypted.plaintext);
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from('plaid_items')
       .update({
         access_token_ciphertext: rotated.ciphertext,
@@ -172,7 +172,7 @@ export async function syncPlaidItemForUser(userId: string, plaidItemId: string) 
       .eq('id', item.id);
   }
 
-  const { data: mappedAccounts, error: mappedError } = await supabaseAdmin
+  const { data: mappedAccounts, error: mappedError } = await getSupabaseAdmin()
     .from('plaid_accounts')
     .select('plaid_account_id, app_account_id')
     .eq('user_id', userId)
@@ -192,7 +192,7 @@ export async function syncPlaidItemForUser(userId: string, plaidItemId: string) 
       .filter((row): row is NonNullable<typeof row> => !!row);
 
     if (upserts.length > 0) {
-      const { error: upsertError } = await supabaseAdmin.from('transactions').upsert(upserts, {
+      const { error: upsertError } = await getSupabaseAdmin().from('transactions').upsert(upserts, {
         onConflict: 'user_id,external_ref',
       });
       if (upsertError) throw new Error(upsertError.message);
@@ -200,7 +200,7 @@ export async function syncPlaidItemForUser(userId: string, plaidItemId: string) 
 
     await removeDeletedTransactions(userId, synced.removed);
 
-    const { error: cursorError } = await supabaseAdmin
+    const { error: cursorError } = await getSupabaseAdmin()
       .from('plaid_items')
       .update({
         sync_cursor: synced.nextCursor,
@@ -216,7 +216,7 @@ export async function syncPlaidItemForUser(userId: string, plaidItemId: string) 
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Plaid sync failed';
     const status = message.includes('ITEM_LOGIN_REQUIRED') ? 'revoked' : 'error';
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from('plaid_items')
       .update({
         item_status: status,
@@ -272,7 +272,7 @@ export async function exchangeAndPersistItem(input: {
 }
 
 export async function syncAllPlaidItemsForUser(userId: string) {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from('plaid_items')
     .select('plaid_item_id')
     .eq('user_id', userId)
@@ -289,7 +289,7 @@ export async function syncAllPlaidItemsForUser(userId: string) {
 }
 
 export async function syncByPlaidItemId(plaidItemId: string) {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from('plaid_items')
     .select('user_id, plaid_item_id')
     .eq('plaid_item_id', plaidItemId);
