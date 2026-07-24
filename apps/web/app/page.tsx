@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import AddTransactionForm from './components/AddTransactionForm';
 import Analytics from './components/Analytics';
 import AuthForm from './components/AuthForm';
+import FinancialPulse from './components/FinancialPulse';
 import GoalsPanel from './components/GoalsPanel';
 import LoansPanel from './components/LoansPanel';
 import NavBar from './components/NavBar';
@@ -378,6 +379,8 @@ export default function HomePage() {
         </section>
 
         <SummaryCards transactions={transactions} />
+
+        <FinancialPulse transactions={transactions} goals={goals} loans={loans} recurring={recurring} />
 
         <div className="grid grid-cols-1 gap-7 lg:grid-cols-3">
           <aside className="space-y-6 lg:col-span-1">
