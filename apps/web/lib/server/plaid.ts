@@ -1,31 +1,40 @@
 import crypto from 'crypto';
 import { Configuration, PlaidApi, PlaidEnvironments, type TransactionsSyncRequest } from 'plaid';
 
-const clientId = process.env.PLAID_CLIENT_ID;
-const secret = process.env.PLAID_SECRET;
-const env = process.env.PLAID_ENV ?? 'sandbox';
+let _client: PlaidApi | null = null;
 
-if (!clientId || !secret) {
-  throw new Error('Missing PLAID_CLIENT_ID or PLAID_SECRET');
-}
+export function getPlaidClient(): PlaidApi {
+  if (_client) return _client;
 
-const host = PlaidEnvironments[env as keyof typeof PlaidEnvironments];
-if (!host) {
-  throw new Error(`Unsupported PLAID_ENV "${env}"`);
-}
+  const clientId = process.env.PLAID_CLIENT_ID;
+  const secret = process.env.PLAID_SECRET;
+  const env = process.env.PLAID_ENV ?? 'sandbox';
 
-const config = new Configuration({
-  basePath: host,
-  baseOptions: {
-    headers: {
-      'PLAID-CLIENT-ID': clientId,
-      'PLAID-SECRET': secret,
-      'Plaid-Version': '2020-09-14',
+  if (!clientId || !secret) {
+    throw new Error('Plaid is not configured: missing PLAID_CLIENT_ID or PLAID_SECRET');
+  }
+
+  const host = PlaidEnvironments[env as keyof typeof PlaidEnvironments];
+  if (!host) {
+    throw new Error(
+      `Unsupported PLAID_ENV "${env}". Valid values are: sandbox, development, production`
+    );
+  }
+
+  const config = new Configuration({
+    basePath: host,
+    baseOptions: {
+      headers: {
+        'PLAID-CLIENT-ID': clientId,
+        'PLAID-SECRET': secret,
+        'Plaid-Version': '2020-09-14',
+      },
     },
-  },
-});
+  });
 
-export const plaidClient = new PlaidApi(config);
+  _client = new PlaidApi(config);
+  return _client;
+}
 
 function base64UrlToBuffer(input: string) {
   const normalized = input.replace(/-/g, '+').replace(/_/g, '/');
@@ -52,7 +61,7 @@ export async function verifyPlaidWebhook(rawBody: string, signedJwt: string) {
     throw new Error('Unsupported Plaid webhook signature header');
   }
 
-  const { data } = await plaidClient.webhookVerificationKeyGet({ key_id: header.kid });
+  const { data } = await getPlaidClient().webhookVerificationKeyGet({ key_id: header.kid });
   const key = crypto.createPublicKey({
     key: { ...data.key } as unknown as crypto.JsonWebKey,
     format: 'jwk',
@@ -97,7 +106,7 @@ export async function syncTransactions(
       cursor: nextCursor ?? undefined,
       count,
     };
-    const response = await plaidClient.transactionsSync(request);
+    const response = await getPlaidClient().transactionsSync(request);
     added.push(...response.data.added);
     modified.push(...response.data.modified);
     removed.push(...response.data.removed);

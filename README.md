@@ -87,6 +87,14 @@ Open [http://localhost:3000](http://localhost:3000).
 3. Add environment variables in Vercel's project settings:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `PLAID_CLIENT_ID`
+   - `PLAID_SECRET`
+   - `PLAID_ENV` (`sandbox`, `development`, or `production`)
+   - `PLAID_TOKEN_ENCRYPTION_KEYS` (e.g. `v1:<base64-encoded-32-byte-key>`)
+   - `PLAID_TOKEN_ENCRYPTION_CURRENT_VERSION` (e.g. `v1`)
+   - `PLAID_WEBHOOK_URL` _(optional — public URL Plaid sends transaction updates to)_
+   - `PLAID_REDIRECT_URI` _(optional — required for OAuth-based banks)_
 4. Deploy — Vercel auto-detects Next.js.
 
 ---
@@ -105,6 +113,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `PLAID_TOKEN_ENCRYPTION_CURRENT_VERSION` | Active encryption key version (for example `v1`) |
 | `PLAID_WEBHOOK_URL` | Public webhook URL used for transaction update callbacks |
 | `PLAID_WEBHOOK_SECRET` | Optional fallback secret for proxy-forwarded webhooks using `x-plaid-webhook-secret` |
+| `PLAID_REDIRECT_URI` | OAuth redirect URI — required for banks that use OAuth (must be registered in your Plaid dashboard) |
 | `EXPO_PUBLIC_SUPABASE_URL` | Same URL for the Expo mobile app |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Same key for the Expo mobile app |
 

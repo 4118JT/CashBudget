@@ -1,5 +1,5 @@
 import { CountryCode, type AccountBase, type RemovedTransaction, type Transaction } from 'plaid';
-import { plaidClient, syncTransactions } from './plaid';
+import { getPlaidClient, syncTransactions } from './plaid';
 import { decryptToken, encryptToken } from './tokenCrypto';
 import { supabaseAdmin } from './supabase';
 
@@ -234,17 +234,17 @@ export async function exchangeAndPersistItem(input: {
   publicToken: string;
   selectedAccountIds: string[];
 }) {
-  const exchange = await plaidClient.itemPublicTokenExchange({ public_token: input.publicToken });
+  const exchange = await getPlaidClient().itemPublicTokenExchange({ public_token: input.publicToken });
   const accessToken = exchange.data.access_token;
   const itemId = exchange.data.item_id;
 
-  const accountsRes = await plaidClient.accountsGet({ access_token: accessToken });
+  const accountsRes = await getPlaidClient().accountsGet({ access_token: accessToken });
   const institutionId = accountsRes.data.item?.institution_id ?? null;
 
   let institutionName: string | null = null;
   if (institutionId) {
     try {
-      const institution = await plaidClient.institutionsGetById({
+      const institution = await getPlaidClient().institutionsGetById({
         institution_id: institutionId,
         country_codes: [CountryCode.Us],
       });
