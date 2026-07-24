@@ -9,6 +9,14 @@ export type Tx = {
   category_id: string | null;
   note: string | null;
   categories: { name: string; kind: string } | null;
+  account_id: string;
+};
+
+export type Account = {
+  id: string;
+  name: string;
+  type: string;
+  starting_balance: number;
 };
 
 export type Category = {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Category } from './types';
+import type { Account, Category } from './types';
 import type { ToastType } from './Toast';
 
 type NewTx = {
@@ -10,17 +10,22 @@ type NewTx = {
   merchant: string;
   category_id: string | null;
   occurred_at: string;
+  account_id: string;
   note: string | null;
 };
 
 interface AddTransactionFormProps {
   categories: Category[];
+  accounts: Account[];
+  defaultAccountId: string | null;
   onAdd: (tx: NewTx) => Promise<void>;
   addToast: (msg: string, type?: ToastType) => void;
 }
 
 export default function AddTransactionForm({
   categories,
+  accounts,
+  defaultAccountId,
   onAdd,
   addToast,
 }: AddTransactionFormProps) {
@@ -28,6 +33,7 @@ export default function AddTransactionForm({
   const [merchant, setMerchant] = useState('');
   const [kind, setKind] = useState<'expense' | 'income'>('expense');
   const [categoryId, setCategoryId] = useState('');
+  const [accountId, setAccountId] = useState(defaultAccountId ?? '');
   const [occurredAt, setOccurredAt] = useState(new Date().toISOString().slice(0, 10));
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
@@ -54,6 +60,7 @@ export default function AddTransactionForm({
         kind,
         merchant: merchant.trim(),
         category_id: categoryId || null,
+        account_id: accountId || defaultAccountId || '',
         occurred_at: new Date(occurredAt).toISOString(),
         note: note.trim() || null,
       });
@@ -61,6 +68,7 @@ export default function AddTransactionForm({
       setAmount('');
       setMerchant('');
       setCategoryId('');
+      setAccountId(defaultAccountId ?? '');
       setNote('');
       setOccurredAt(new Date().toISOString().slice(0, 10));
       setErrors({});
@@ -136,6 +144,13 @@ export default function AddTransactionForm({
             placeholder="e.g. Starbucks"
           />
           {errors.merchant && <p className="text-xs text-red-500 mt-1">{errors.merchant}</p>}
+        </div>
+
+        <div>
+          <label className="block text-sm text-gray-600 mb-1">Account</label>
+          <select className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
+            {accounts.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}
+          </select>
         </div>
 
         <div>
