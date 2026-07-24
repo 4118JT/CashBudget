@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import AddTransactionForm from './components/AddTransactionForm';
 import AppleCashPanel from './components/AppleCashPanel';
+import AppleCashCsvImport from './components/AppleCashCsvImport';
 import Analytics from './components/Analytics';
 import AuthForm from './components/AuthForm';
 import FinancialPulse from './components/FinancialPulse';
@@ -342,6 +343,21 @@ export default function HomePage() {
     setAccounts((current) => current.map((account) => account.id === appleCash.id ? { ...account, starting_balance: balance } : account));
   }
 
+  async function importAppleCashCsv(fileName: string, rows: { date: string; description: string; amount: number; kind: 'income' | 'expense'; externalRef: string }[]) {
+    if (!user) throw new Error('Please sign in again.');
+    const appleCash = accounts.find((account) => account.name === 'Apple Cash');
+    if (!appleCash) throw new Error('Create the Apple Cash account before importing.');
+    const { data: importedRows, error: importedRowsError } = await supabase.from('transactions').select('external_ref').eq('user_id', user.id).eq('account_id', appleCash.id).not('external_ref', 'is', null);
+    if (importedRowsError) throw new Error(importedRowsError.message);
+    const existingRefs = new Set((importedRows ?? []).map((transaction) => transaction.external_ref));
+    const uniqueRows = rows.filter((row) => !existingRefs.has(row.externalRef));
+    const { error } = await supabase.from('transactions').upsert(uniqueRows.map((row) => ({ user_id: user.id, account_id: appleCash.id, amount: row.amount, kind: row.kind, merchant: row.description, occurred_at: row.date, status: 'confirmed', source: 'import', external_ref: row.externalRef })), { onConflict: 'user_id,external_ref', ignoreDuplicates: true });
+    if (error) throw new Error(error.message);
+    await supabase.from('imports').insert({ user_id: user.id, filename: fileName, rows_total: rows.length, rows_inserted: uniqueRows.length, rows_duplicated: rows.length - uniqueRows.length });
+    await loadData(user.id);
+    return { inserted: uniqueRows.length, duplicates: rows.length - uniqueRows.length };
+  }
+
   async function deleteTransaction(id: string) {
     if (!user) return;
     const { error } = await supabase.from('transactions').delete().eq('id', id).eq('user_id', user.id);
@@ -402,7 +418,7 @@ export default function HomePage() {
           <section className="grid gap-4 md:grid-cols-3"><button type="button" onClick={() => setPage('activity')} className="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-indigo-300 hover:shadow-md"><p className="text-xs font-semibold uppercase tracking-wider text-indigo-600">Activity</p><h2 className="mt-2 text-lg font-semibold text-slate-900">Track transactions</h2><p className="mt-1 text-sm text-slate-500">Add entries, filter history, and connect your bank.</p></button><button type="button" onClick={() => setPage('planning')} className="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-indigo-300 hover:shadow-md"><p className="text-xs font-semibold uppercase tracking-wider text-indigo-600">Planning</p><h2 className="mt-2 text-lg font-semibold text-slate-900">Stay ahead</h2><p className="mt-1 text-sm text-slate-500">Manage goals, recurring payments, and loans.</p></button><button type="button" onClick={() => setPage('analytics')} className="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-indigo-300 hover:shadow-md"><p className="text-xs font-semibold uppercase tracking-wider text-indigo-600">Analytics</p><h2 className="mt-2 text-lg font-semibold text-slate-900">Understand trends</h2><p className="mt-1 text-sm text-slate-500">Explore categories, merchants, and cash flow.</p></button></section>
         </>}
 
-        {page === 'activity' && <><section><p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-600">Activity</p><h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">Transactions and connected accounts</h1><p className="mt-2 text-sm text-slate-500">Add, review, and sync the activity that shapes your budget.</p></section><div className="grid gap-7 lg:grid-cols-3"><aside className="space-y-6"><AddTransactionForm categories={categories} accounts={accounts} defaultAccountId={accountId} onAdd={addTransaction} addToast={addToast} /><AppleCashPanel account={accounts.find((account) => account.name === 'Apple Cash') ?? null} transactions={transactions} onCreate={createAppleCashAccount} onUpdateBalance={updateAppleCashBalance} addToast={addToast} /><PlaidPanel onSynced={() => loadData(user.id)} addToast={addToast} /></aside><section className="lg:col-span-2"><TransactionList transactions={transactions} categories={categories} onDelete={deleteTransaction} onDeleteMany={deleteTransactions} /></section></div></>}
+        {page === 'activity' && <><section><p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-600">Activity</p><h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">Transactions and connected accounts</h1><p className="mt-2 text-sm text-slate-500">Add, review, and sync the activity that shapes your budget.</p></section><div className="grid gap-7 lg:grid-cols-3"><aside className="space-y-6"><AddTransactionForm categories={categories} accounts={accounts} defaultAccountId={accountId} onAdd={addTransaction} addToast={addToast} /><AppleCashPanel account={accounts.find((account) => account.name === 'Apple Cash') ?? null} transactions={transactions} onCreate={createAppleCashAccount} onUpdateBalance={updateAppleCashBalance} addToast={addToast} /><AppleCashCsvImport ready={accounts.some((account) => account.name === 'Apple Cash')} onImport={importAppleCashCsv} addToast={addToast} /><PlaidPanel onSynced={() => loadData(user.id)} addToast={addToast} /></aside><section className="lg:col-span-2"><TransactionList transactions={transactions} categories={categories} onDelete={deleteTransaction} onDeleteMany={deleteTransactions} /></section></div></>}
 
         {page === 'planning' && <><section><p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-600">Planning</p><h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">Make upcoming money decisions visible</h1><p className="mt-2 text-sm text-slate-500">Keep goals, debt, and recurring commitments together in one focused space.</p></section><div className="grid gap-6 lg:grid-cols-3"><GoalsPanel goals={goals} onAddGoal={addGoal} addToast={addToast} disabledReason={goalsDisabledReason} /><LoansPanel loans={loans} onAddLoan={addLoan} onMarkPaidOff={markLoanPaidOff} onDeleteLoan={deleteLoan} addToast={addToast} /><RecurringPanel recurring={recurring} categories={categories} onAdd={addRecurring} onToggleActive={toggleRecurring} onDelete={deleteRecurring} addToast={addToast} /></div></>}
 
