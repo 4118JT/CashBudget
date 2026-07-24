@@ -47,6 +47,7 @@ export default function HomePage() {
   const [goalsDisabledReason, setGoalsDisabledReason] = useState<string | null>(null);
   const [accountId, setAccountId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState<'overview' | 'activity' | 'planning' | 'analytics'>('overview');
 
   const loadData = useCallback(
     async (uid: string) => {
@@ -360,77 +361,24 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-slate-100">
-      <NavBar userEmail={user.email} onSignOut={signOut} />
+      <NavBar userEmail={user.email} page={page} onNavigate={setPage} onSignOut={signOut} />
       <ToastContainer toasts={toasts} />
 
       <main className="mx-auto max-w-7xl space-y-7 px-4 py-7 sm:px-6 lg:px-8">
-        <section id="overview" className="scroll-mt-24 overflow-hidden rounded-2xl bg-slate-950 px-6 py-7 text-white shadow-xl shadow-slate-950/10 sm:px-8">
-          <div className="flex flex-col justify-between gap-7 lg:flex-row lg:items-end">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-300">Financial overview</p>
-              <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Good to see you, {displayName}.</h1>
-              <p className="mt-2 max-w-xl text-sm text-slate-300">Here is your personal money snapshot for this month. Keep an eye on spending, plans, and the next move that matters.</p>
-            </div>
-            <div className="grid grid-cols-2 gap-3 sm:min-w-[360px]">
-              <div className="rounded-xl border border-slate-700 bg-slate-900/80 px-4 py-3"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Month spend</p><p className="mt-1 text-lg font-semibold">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(monthExpenses)}</p></div>
-              <div className="rounded-xl border border-slate-700 bg-slate-900/80 px-4 py-3"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Your plan</p><p className="mt-1 text-lg font-semibold">{goals.length + activeRecurring} active items</p></div>
-            </div>
-          </div>
-        </section>
-
-        <SummaryCards transactions={transactions} />
-
-        <FinancialPulse transactions={transactions} goals={goals} loans={loans} recurring={recurring} />
-
-        <div className="grid grid-cols-1 gap-7 lg:grid-cols-3">
-          <aside className="space-y-6 lg:col-span-1">
-            <div id="add-transaction" className="scroll-mt-24"><p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Quick actions</p>
-            <AddTransactionForm categories={categories} onAdd={addTransaction} addToast={addToast} />
-            </div>
-            <div>
-              <PlaidPanel onSynced={() => loadData(user.id)} addToast={addToast} />
-            </div>
-            <div id="planning" className="scroll-mt-24">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Plan ahead</p>
-              <GoalsPanel
-                goals={goals}
-                onAddGoal={addGoal}
-                addToast={addToast}
-                disabledReason={goalsDisabledReason}
-              />
-            </div>
-            <div>
-              <LoansPanel
-                loans={loans}
-                onAddLoan={addLoan}
-                onMarkPaidOff={markLoanPaidOff}
-                onDeleteLoan={deleteLoan}
-                addToast={addToast}
-              />
-            </div>
-            <div>
-              <RecurringPanel
-                recurring={recurring}
-                categories={categories}
-                onAdd={addRecurring}
-                onToggleActive={toggleRecurring}
-                onDelete={deleteRecurring}
-                addToast={addToast}
-              />
-            </div>
-          </aside>
-          <section id="activity" className="scroll-mt-24 lg:col-span-2">
-            <div className="mb-3 flex items-center justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Activity</p><h2 className="mt-1 text-lg font-semibold text-slate-900">Recent transactions</h2></div><a href="#add-transaction" className="text-sm font-semibold text-indigo-600 hover:text-indigo-700">Add entry</a></div>
-            <TransactionList
-              transactions={transactions}
-              categories={categories}
-              onDelete={deleteTransaction}
-              onDeleteMany={deleteTransactions}
-            />
+        {page === 'overview' && <>
+          <section className="overflow-hidden rounded-2xl bg-slate-950 px-6 py-7 text-white shadow-xl shadow-slate-950/10 sm:px-8">
+            <div className="flex flex-col justify-between gap-7 lg:flex-row lg:items-end"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-300">Financial overview</p><h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Good to see you, {displayName}.</h1><p className="mt-2 max-w-xl text-sm text-slate-300">Your financial picture, without the noise. Review the essentials, then dive into activity or planning when you are ready.</p></div><div className="grid grid-cols-2 gap-3 sm:min-w-[360px]"><div className="rounded-xl border border-slate-700 bg-slate-900/80 px-4 py-3"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Month spend</p><p className="mt-1 text-lg font-semibold">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(monthExpenses)}</p></div><div className="rounded-xl border border-slate-700 bg-slate-900/80 px-4 py-3"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Your plan</p><p className="mt-1 text-lg font-semibold">{goals.length + activeRecurring} active items</p></div></div></div>
           </section>
-        </div>
+          <SummaryCards transactions={transactions} />
+          <FinancialPulse transactions={transactions} goals={goals} loans={loans} recurring={recurring} />
+          <section className="grid gap-4 md:grid-cols-3"><button type="button" onClick={() => setPage('activity')} className="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-indigo-300 hover:shadow-md"><p className="text-xs font-semibold uppercase tracking-wider text-indigo-600">Activity</p><h2 className="mt-2 text-lg font-semibold text-slate-900">Track transactions</h2><p className="mt-1 text-sm text-slate-500">Add entries, filter history, and connect your bank.</p></button><button type="button" onClick={() => setPage('planning')} className="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-indigo-300 hover:shadow-md"><p className="text-xs font-semibold uppercase tracking-wider text-indigo-600">Planning</p><h2 className="mt-2 text-lg font-semibold text-slate-900">Stay ahead</h2><p className="mt-1 text-sm text-slate-500">Manage goals, recurring payments, and loans.</p></button><button type="button" onClick={() => setPage('analytics')} className="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-indigo-300 hover:shadow-md"><p className="text-xs font-semibold uppercase tracking-wider text-indigo-600">Analytics</p><h2 className="mt-2 text-lg font-semibold text-slate-900">Understand trends</h2><p className="mt-1 text-sm text-slate-500">Explore categories, merchants, and cash flow.</p></button></section>
+        </>}
 
-        <Analytics transactions={transactions} categories={categories} />
+        {page === 'activity' && <><section><p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-600">Activity</p><h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">Transactions and connected accounts</h1><p className="mt-2 text-sm text-slate-500">Add, review, and sync the activity that shapes your budget.</p></section><div className="grid gap-7 lg:grid-cols-3"><aside className="space-y-6"><AddTransactionForm categories={categories} onAdd={addTransaction} addToast={addToast} /><PlaidPanel onSynced={() => loadData(user.id)} addToast={addToast} /></aside><section className="lg:col-span-2"><TransactionList transactions={transactions} categories={categories} onDelete={deleteTransaction} onDeleteMany={deleteTransactions} /></section></div></>}
+
+        {page === 'planning' && <><section><p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-600">Planning</p><h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">Make upcoming money decisions visible</h1><p className="mt-2 text-sm text-slate-500">Keep goals, debt, and recurring commitments together in one focused space.</p></section><div className="grid gap-6 lg:grid-cols-3"><GoalsPanel goals={goals} onAddGoal={addGoal} addToast={addToast} disabledReason={goalsDisabledReason} /><LoansPanel loans={loans} onAddLoan={addLoan} onMarkPaidOff={markLoanPaidOff} onDeleteLoan={deleteLoan} addToast={addToast} /><RecurringPanel recurring={recurring} categories={categories} onAdd={addRecurring} onToggleActive={toggleRecurring} onDelete={deleteRecurring} addToast={addToast} /></div></>}
+
+        {page === 'analytics' && <><section><p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-600">Analytics</p><h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">See how your money moves</h1><p className="mt-2 text-sm text-slate-500">Use filters and trends to spot meaningful changes in your spending.</p></section><Analytics transactions={transactions} categories={categories} /></>}
       </main>
     </div>
   );
